@@ -1,0 +1,214 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Выдача книг</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 400px;
+            max-width: 90%;
+        }
+        .close-modal {
+            float: right;
+            font-size: 20px;
+            cursor: pointer;
+            color: red;
+        }
+        .book-issue-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            margin-top: 20px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .book-issue-table th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        .book-issue-table th {
+            background: #f0f0f0;
+        }
+        #search-reader {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 400px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        .delete-button {
+            background-color: red;
+            color: white;
+            padding: 5px 10px;
+            font-size: 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .delete-button:hover {
+            background-color: darkred;
+        }
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .dropdown-btn {
+            cursor: pointer;
+            background-color: #e0e0e0;
+            border: 1px solid #ccc;
+            padding: 4px 8px;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+        .dropdown-list {
+            display: none;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #aaa;
+            margin: 5px 0;
+            padding: 5px;
+            background: #fff;
+        }
+        .dropdown-list div {
+            padding: 4px;
+            cursor: pointer;
+        }
+        .dropdown-list div:hover {
+            background-color: #eee;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header-bar">
+    <div class="header-nav">
+        <a href="{% url 'book_list' %}" class="header-title">УПРАВЛЕНИЕ КНИЖНЫМ ФОНДОМ</a>
+        <a href="{% url 'book_issue' %}" class="header-link">ВЫДАЧА КНИГ</a>
+        <a href="{% url 'readers_list' %}" class="header-link">ЧИТАТЕЛИ</a>
+        <a href="#" class="header-link">СТАТИСТИКА</a>
+        <a href="{% url 'staff_login' %}" class="header-link">ВЫХОД</a>
+    </div>
+</div>
+
+<div class="content">
+    <h2>Выданные книги</h2>
+    <div class="top-bar">
+        <input type="text" id="search-reader" placeholder="Поиск по имени и фамилии...">
+        <button id="openIssueModal" class="add-button">➕ Выдать книгу</button>
+    </div>
+
+    <table class="book-issue-table">
+        <thead>
+        <tr>
+            <th>Логин Telegram</th>
+            <th>Имя и фамилия</th>
+            <th>Книга</th>
+            <th>Сотрудник</th>
+            <th>Дата выдачи</th>
+            <th>Дата возврата</th>
+            <th>Удалить информацию</th>
+        </tr>
+        </thead>
+        <tbody id="issue-body">
+        {% for issue in issues %}
+            <tr>
+                <td>{{ issue.reader.telegram_username }}</td>
+                <td>{{ issue.reader.full_name }}</td>
+                <td>{{ issue.book.title }}</td>
+                <td>{{ issue.issued_by }}</td>
+                <td>{{ issue.issue_date }}</td>
+                <td>{{ issue.return_date }}</td>
+                <td>
+                    <form method="post" action="{% url 'delete_issue' issue.pk %}" style="margin:0">
+                        {% csrf_token %}
+                        <button type="submit" class="delete-button">Удалить</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Модальное окно -->
+<div id="issueModal" class="modal">
+    <div class="modal-content">
+        <span id="closeIssueModal" class="close-modal">&times;</span>
+        <h3>Выдать книгу</h3>
+        <form method="post" action="{% url 'add_book_issue' %}">
+            {% csrf_token %}
+            <div>
+                <input type="text" name="telegram_username" id="telegramField" placeholder="Логин Telegram" required>
+                <span class="dropdown-btn" onclick="toggleDropdown('telegramDropdown')">›</span>
+                <div class="dropdown-list" id="telegramDropdown">
+                    {% for reader in readers %}
+                        <div onclick="selectValue('telegramField', '{{ reader.telegram_username }}')">{{ reader.telegram_username }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div>
+                <input type="text" name="book_title" id="bookField" placeholder="Название книги" required>
+                <span class="dropdown-btn" onclick="toggleDropdown('bookDropdown')">›</span>
+                <div class="dropdown-list" id="bookDropdown">
+                    {% for book in books %}
+                        <div onclick="selectValue('bookField', '{{ book.title }}')">{{ book.title }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <input type="text" name="issued_by" placeholder="Сотрудник" required>
+            <button type="submit">Сохранить</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    const modal = document.getElementById('issueModal');
+    const openBtn = document.getElementById('openIssueModal');
+    const closeBtn = document.getElementById('closeIssueModal');
+
+    openBtn.onclick = () => modal.style.display = 'flex';
+    closeBtn.onclick = () => modal.style.display = 'none';
+    window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+
+    $('#search-reader').on('input', function () {
+        const query = $(this).val();
+        $.get("{% url 'ajax_issue_search' %}", { q: query }, function (data) {
+            $('#issue-body').html(data.html);
+        });
+    });
+
+    function toggleDropdown(id) {
+        const dropdown = document.getElementById(id);
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function selectValue(fieldId, value) {
+        document.getElementById(fieldId).value = value;
+        document.querySelectorAll('.dropdown-list').forEach(el => el.style.display = 'none');
+    }
+</script>
+
+</body>
+</html>

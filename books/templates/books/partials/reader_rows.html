@@ -1,0 +1,12 @@
+{% for reader in readers %}
+<tr>
+    <td>{{ reader.full_name }}</td>
+    <td>{{ reader.telegram_username }}</td>
+    <td>
+        <form method="POST" action="{% url 'delete_reader' reader.telegram_username %}">
+            {% csrf_token %}
+            <button type="submit" style="background-color: #e53935; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Удалить</button>
+        </form>
+    </td>
+</tr>
+{% endfor %}

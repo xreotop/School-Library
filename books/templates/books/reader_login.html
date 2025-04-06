@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Вход для читателя</title>
+    <style>
+        body {
+            font-family: Arial;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 100px;
+        }
+        form, .register-form {
+            display: flex;
+            flex-direction: column;
+            width: 300px;
+            gap: 10px;
+        }
+        input {
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #388e3c;
+        }
+        #registerModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 320px;
+        }
+        .close-modal {
+            float: right;
+            cursor: pointer;
+            font-size: 20px;
+            color: red;
+        }
+        .register-link {
+            margin-top: 20px;
+            font-size: 14px;
+            text-align: center;
+            cursor: pointer;
+            color: blue;
+        }
+        .message {
+            color: red;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Вход для читателя</h2>
+
+{% if messages %}
+    <div class="message">
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<form method="post" action="{% url 'reader_login' %}">
+    {% csrf_token %}
+    <input type="text" name="telegram_username" placeholder="Логин Telegram (с @)" required>
+    <input type="password" name="password" placeholder="Пароль" required>
+    <button type="submit">Войти</button>
+</form>
+
+<div class="register-link" id="openRegister">Нет аккаунта? Зарегистрироваться</div>
+
+<!-- 🔐 Модальное окно регистрации -->
+<div id="registerModal">
+    <div class="modal-content">
+        <div class="close-modal" id="closeRegister">×</div>
+        <h3>Регистрация</h3>
+        <form method="post" action="{% url 'reader_register' %}">
+            {% csrf_token %}
+            <input type="text" name="full_name" placeholder="Имя и фамилия" required>
+            <input type="text" name="telegram_username" placeholder="Telegram (с @)" required>
+            <input type="password" name="password" placeholder="Пароль" required>
+            <button type="submit">Зарегистрироваться</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    const registerModal = document.getElementById("registerModal");
+    const openBtn = document.getElementById("openRegister");
+    const closeBtn = document.getElementById("closeRegister");
+
+    openBtn.onclick = () => registerModal.style.display = "flex";
+    closeBtn.onclick = () => registerModal.style.display = "none";
+    window.onclick = (e) => {
+        if (e.target === registerModal) registerModal.style.display = "none";
+    };
+</script>
+
+</body>
+</html>

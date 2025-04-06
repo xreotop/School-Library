@@ -1,0 +1,16 @@
+{% for issue in issues %}
+<tr>
+    <td>{{ issue.reader.telegram_username }}</td>
+    <td>{{ issue.reader.full_name }}</td>
+    <td>{{ issue.book.title }}</td>
+    <td>{{ issue.issued_by }}</td>
+    <td>{{ issue.issue_date }}</td>
+    <td>{{ issue.return_date }}</td>
+    <td>
+        <form method="post" action="{% url 'delete_issue' issue.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="delete-button">Удалить</button>
+        </form>
+    </td>
+</tr>
+{% endfor %}

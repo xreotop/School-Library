@@ -1,0 +1,181 @@
+{% load static %} 
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Библиотека XX</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+
+<!-- 🔝 Фиксированный хедер -->
+<header class="header-bar">
+    <div class="header-nav">
+        <a href="{% url 'book_list' %}" class="header-title">УПРАВЛЕНИЕ КНИЖНЫМ ФОНДОМ</a>
+        <a href="{% url 'book_issue' %}" class="header-link">ВЫДАЧА КНИГ</a>
+        <a href="{% url 'readers_list' %}" class="header-link">ЧИТАТЕЛИ</a>
+        <a href="#" class="header-link">СТАТИСТИКА</a>
+        <a href="{% url 'staff_login' %}" class="header-link">ВЫХОД</a>
+    </div>
+    <div class="header-right">
+        <button id="openModal" class="add-button">➕ Добавить книгу</button>
+    </div>
+</header>
+
+<!-- 📚 Основной контент -->
+<main class="content">
+    <div class="filters">
+        <form method="get" id="search-form">
+            <label for="type">Поиск книги по:</label>
+            <select name="type" id="search-type">
+                <option value="title" {% if search_type == 'title' %}selected{% endif %}>названию</option>
+                <option value="author" {% if search_type == 'author' %}selected{% endif %}>автору</option>
+                <option value="year" {% if search_type == 'year' %}selected{% endif %}>году</option>
+            </select>
+            <input type="text" name="q" id="search-box" placeholder="Введите название..." value="{{ query }}">
+        </form>
+    </div>
+
+    <div class="book-container">
+        {% for book in books %}
+        <div class="book-card">
+            <a href="{% url 'delete_book' book.pk %}" class="delete-icon" title="Удалить">❌</a>
+            {% if book.cover_image %}
+                <img src="{{ book.cover_image.url }}" alt="{{ book.title }}">
+            {% else %}
+                <img src="{% static 'images/default_cover.jpg' %}" alt="Обложка отсутствует">
+            {% endif %}
+            <p><strong>{{ book.title }}</strong></p>
+            <p>Автор: {{ book.author }}</p>
+            <p>Издательство: {{ book.publisher|default_if_none:"Не указано" }}</p>
+            <p>Год: {{ book.year|default_if_none:"Не указано" }}</p>
+            <p>Размещение: {{ book.location|default_if_none:"Не указано" }}</p>
+            <p>Количество: {{ book.quantity }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</main>
+
+<!-- 📦 Модальное окно -->
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <span id="closeModal" class="close">&times;</span>
+        <h2>Добавить книгу</h2>
+        <form id="add-book-form" enctype="multipart/form-data">
+            {% csrf_token %}
+            <p><input type="text" name="title" placeholder="Название книги" required></p>
+            <p><input type="text" name="author" placeholder="Автор" required></p>
+            <p><input type="text" name="publisher" placeholder="Издательство"></p>
+            <p><input type="number" name="year" placeholder="Год написания"></p>
+            <p><input type="text" name="location" placeholder="Размещение"></p>
+            <p><input type="file" name="cover_image"></p>
+            <p><input type="number" name="quantity" placeholder="Количество" min="1"></p>
+            <input type="hidden" name="cover_auto">
+            <div id="cover-preview" style="margin: 10px 0;"></div>
+            <div id="form-errors" style="color: red; font-size: 14px;"></div>
+            <button type="submit" class="add-button">Сохранить</button>
+        </form>
+    </div>
+</div>
+
+<footer class="site-footer">
+    <div class="footer-content">
+        <p>Made by Andrey Kovalev, Vladivostok, Russia</p>
+        <a href="https://t.me/zxcikona20" target="_blank" title="Telegram">
+            <img src="{% static 'images/telegram_icon.png' %}" alt="Telegram" class="telegram-icon">
+        </a>
+    </div>
+</footer>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(function () {
+    function updateBooks() {
+        const searchType = $('#search-type').val();
+        const searchTerm = $('#search-box').val();
+        $.get("{% url 'ajax_book_list' %}", {
+            type: searchType,
+            q: searchTerm
+        }, function (data) {
+            $('.book-container').html(data.html);
+        });
+    }
+
+    $('#search-box').on('input', updateBooks);
+    $('#search-type').on('change', function () {
+        $('#search-box').val('');
+        updateBooks();
+    });
+
+    $('#search-form').on('submit', function (e) {
+        e.preventDefault();
+        updateBooks();
+    });
+
+    $('#openModal').on('click', () => $('#modal').css('display', 'flex'));
+    $('#closeModal').on('click', () => $('#modal').hide());
+    window.onclick = (e) => { if (e.target === document.getElementById('modal')) $('#modal').hide(); };
+
+    $('input[name="title"]').on('blur', function () {
+        const title = $(this).val().trim();
+        if (!title) return;
+
+        $.get('/books/fetch-cover/', { title: title }, function (data) {
+            if (data.image_urls) {
+                let previewHTML = '<div class="cover-scroll">';
+                data.image_urls.forEach(url => {
+                    previewHTML += `<img src="${url}" class="cover-option">`;
+                });
+                previewHTML += '</div>';
+                $('#cover-preview').html(previewHTML);
+
+                $('.cover-option').on('click', function () {
+                    $('.cover-option').removeClass('selected');
+                    $(this).addClass('selected');
+                    $('input[name="cover_auto"]').val($(this).attr('src'));
+                });
+            }
+
+            if (data.author) {
+                $('input[name="author"]').val(data.author);
+            }
+           
+        });
+    });
+
+    $('#add-book-form').on('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        $.ajax({
+            url: "{% url 'add_book' %}",
+            type: "POST",
+            data: formData,
+            contentType: false,
+            processData: false,
+            success: function (data) {
+                if (data.success) {
+                    $('#modal').hide();
+                    $('#add-book-form')[0].reset();
+                    $('#cover-preview').empty();
+                    $('#form-errors').empty();
+                    updateBooks();
+                }
+            },
+            error: function (xhr) {
+                const errors = xhr.responseJSON?.errors;
+                if (errors) {
+                    let html = '';
+                    for (const field in errors) {
+                        html += `<p>${errors[field].join(', ')}</p>`;
+                    }
+                    $('#form-errors').html(html);
+                } else {
+                    alert("Ошибка при добавлении книги.");
+                }
+            }
+        });
+    });
+});
+</script>
+</body>
+</html>

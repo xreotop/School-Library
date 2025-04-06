@@ -1,0 +1,174 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Каталог книг для читателей</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body 
+        {
+            background-image: url("{% static 'images/background.jpg' %}");
+            background-size: cover;          /* растягивает на весь экран */
+            background-repeat: no-repeat;    /* не повторяет */
+            background-position: center;     /* по центру */
+            background-attachment: fixed;    /* не прокручивается с контентом */
+        }
+
+        /* Чтобы текст был читаемым на фоне: */
+       header-bar {
+            background-color: #ffffff;
+            padding: 10px 20px;
+            border-bottom: 1px solid #ccc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-nav {
+            display: flex;
+            gap: 20px;
+        }
+        .header-link {
+            text-decoration: none;
+            color: black;
+            font-weight: bold;
+        }
+        .header-link:hover {
+            color: #d50000;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+        }
+        h2 {
+            margin-bottom: 20px;
+        }
+        .search-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        #search-box {
+            padding: 10px;
+            font-size: 16px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .book-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        .book-card {
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.2);
+            width: 200px;
+            text-align: center;
+        }
+        .book-card img {
+            width: 100%;
+            height: 280px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+        .book-card p {
+            margin: 10px 0 0;
+            font-size: 14px;
+        }
+        .site-footer {
+            background-color: #f1f1f1;
+            padding: 15px 0;
+            text-align: center;
+            font-size: 14px;
+            color: #555;
+            border-top: 1px solid black;
+            border-bottom: 1px solid black;
+        }
+        .footer-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .telegram-icon {
+            width: 24px;
+            height: 24px;
+            transition: transform 0.2s ease;
+        }
+        .telegram-icon:hover {
+            transform: scale(1.2);
+        }
+    </style>
+</head>
+<body>
+
+<div class="header-bar">
+    <div class="header-nav">
+        <a href="{% url 'reader_catalog' %}" class="header-link">КАТАЛОГ КНИГ</a>
+        <a href="{% url 'reader_login' %}" class="header-link">Выход</a>
+    </div>
+</div>
+
+<div class="content">
+    
+    <div class="search-wrapper">
+        <input type="text" id="search-box" placeholder="Поиск по названию или автору...">
+    </div>
+    <div class="book-container" id="book-container">
+        <!-- Книги загружаются через JavaScript -->
+    </div>
+</div>
+
+<footer class="site-footer">
+    <div class="footer-content">
+        <p>Made by Andrey Kovalev, Vladivostok, Russia</p>
+        <a href="https://t.me/zxcikona20" target="_blank" title="Telegram">
+            <img src="{% static 'images/telegram_icon.png' %}" alt="Telegram" class="telegram-icon">
+        </a>
+    </div>
+</footer>
+
+<script>
+    $(document).ready(function () {
+        function fetchBooks(query = '') {
+            $.ajax({
+                url: "{% url 'ajax_book_search' %}",
+                data: { 'q': query },
+                dataType: 'json',
+                success: function (data) {
+                    $('#book-container').empty();
+                    if (data.books.length > 0) {
+                        data.books.forEach(function (book) {
+                            const bookHtml = `
+                                <div class="book-card">
+                                    ${book.cover_image ? `<img src="${book.cover_image}" alt="Обложка книги">` : ''}
+                                    <p><strong>${book.title}</strong></p>
+                                    <p>${book.author}</p>
+                                    
+                                </div>
+                            `;
+                            $('#book-container').append(bookHtml);
+                        });
+                    } else {
+                        $('#book-container').html('<p>Книги не найдены.</p>');
+                    }
+                }
+            });
+        }
+
+        fetchBooks();
+
+        $('#search-box').on('input', function () {
+            const query = $(this).val();
+            fetchBooks(query);
+        });
+    });
+</script>
+
+</body>
+</html>

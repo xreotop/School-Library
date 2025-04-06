@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Вход для сотрудника</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-box {
+            text-align: center;
+            padding: 30px;
+            border: 2px solid #000;
+            background-color: #fff;
+            box-shadow: 5px 5px 10px rgba(0,0,0,0.2);
+        }
+        input {
+            padding: 10px;
+            margin: 10px;
+            width: 200px;
+            font-size: 16px;
+            box-shadow: 3px 3px 5px #999;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            box-shadow: 3px 3px 5px #999;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h2>Вход в систему для сотрудника</h2>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="password" name="pin" placeholder="Введите пин-код"><br>
+            <button type="submit">Войти</button>
+        </form>
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+    </div>
+</body>
+</html>

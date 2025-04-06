@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Вход в систему</title>
+    <style>
+        body {
+            font-family: Arial;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 100px;
+        }
+        .btn-container {
+            display: flex;
+            gap: 40px;
+            margin-top: 40px;
+        }
+        .login-button {
+            background-color: #f4dada;
+            padding: 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border: 2px solid #333;
+            cursor: pointer;
+            text-decoration: none;
+            color: black;
+            text-align: center;
+        }
+        .login-button:hover {
+            background-color: #e3bcbc;
+        }
+    </style>
+</head>
+<body>
+    <h2>Вход в систему</h2>
+    <div class="btn-container">
+        <a href="{% url 'reader_login' %}" class="login-button">Вход для читателя</a>
+        <a href="{% url 'staff_login' %}" class="login-button">Вход для сотрудника</a>
+    </div>
+</body>
+</html>

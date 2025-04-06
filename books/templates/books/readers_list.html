@@ -1,0 +1,73 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Читатели</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        
+        #search-reader {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 400px;
+            padding: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header-bar">
+    <div class="header-nav">
+        <a href="{% url 'book_list' %}" class="header-title">УПРАВЛЕНИЕ КНИЖНЫМ ФОНДОМ</a>
+        <a href="{% url 'book_issue' %}" class="header-link">ВЫДАЧА КНИГ</a>
+        <a href="{% url 'readers_list' %}" class="header-link">ЧИТАТЕЛИ</a>
+        <a href="#" class="header-link">СТАТИСТИКА</a>
+        <a href="{% url 'staff_login' %}" class="header-link">ВЫХОД</a>
+    </div>
+</div>
+
+<div class="content">
+    <h2>Зарегистрированные читатели</h2>
+    <input type="text" id="search-reader" placeholder="Поиск по имени и фамилии...">
+
+    <table class="readers-table">
+        <thead>
+            <tr>
+                <th>Имя и фамилия</th>
+                <th>Telegram</th>
+                <th>Удалить</th>
+            </tr>
+        </thead>
+        <tbody id="readers-body">
+            {% include 'books/partials/reader_rows.html' %}
+        </tbody>
+    </table>
+</div>
+
+<footer class="site-footer">
+    <div class="footer-content">
+        <p>Made by Andrey Kovalev, Vladivostok, Russia</p>
+        <a href="https://t.me/zxcikona20" target="_blank" title="Telegram">
+            <img src="{% static 'images/telegram_icon.png' %}" alt="Telegram" class="telegram-icon">
+        </a>
+    </div>
+</footer>
+
+
+<script>
+    $(function () {
+        $('#search-reader').on('input', function () {
+            const query = $(this).val();
+            $.get("{% url 'ajax_reader_search' %}", { q: query }, function (data) {
+                $('#readers-body').html(data.html);
+            });
+        });
+    });
+</script>
+
+</body>
+</html>
