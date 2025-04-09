@@ -21,6 +21,7 @@ class Book(models.Model):
 class Reader(models.Model):
     full_name = models.CharField("Имя и фамилия", max_length=100)
     telegram_username = models.CharField("Telegram", max_length=100)
+    chat_id = models.BigIntegerField("Chat ID Telegram", null=True, blank=True)
     password = models.CharField("Пароль", max_length=100)  # Пока храним в открытом виде, позже заменим
 
     def __str__(self):

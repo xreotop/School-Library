@@ -7,17 +7,14 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        body 
-        {
+        body {
             background-image: url("{% static 'images/background.jpg' %}");
-            background-size: cover;          /* растягивает на весь экран */
-            background-repeat: no-repeat;    /* не повторяет */
-            background-position: center;     /* по центру */
-            background-attachment: fixed;    /* не прокручивается с контентом */
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-attachment: fixed;
         }
-
-        /* Чтобы текст был читаемым на фоне: */
-       header-bar {
+        .header-bar {
             background-color: #ffffff;
             padding: 10px 20px;
             border-bottom: 1px solid #ccc;
@@ -28,6 +25,7 @@
         .header-nav {
             display: flex;
             gap: 20px;
+            align-items: center;
         }
         .header-link {
             text-decoration: none;
@@ -36,6 +34,10 @@
         }
         .header-link:hover {
             color: #d50000;
+        }
+        .telegram-header-icon {
+            width: 24px;
+            height: 24px;
         }
         .content {
             flex: 1;
@@ -47,7 +49,7 @@
         .search-wrapper {
             display: flex;
             justify-content: center;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         #search-box {
             padding: 10px;
@@ -115,12 +117,22 @@
 </div>
 
 <div class="content">
-    
     <div class="search-wrapper">
         <input type="text" id="search-box" placeholder="Поиск по названию или автору...">
     </div>
+
+    <div style="text-align: center; margin-bottom: 20px;">
+        <p style="background-color: rgba(255,255,255,0.9); padding: 10px; border-radius: 8px; display: inline-block;">
+            Чтобы получать уведомления о возврате книг,<br>
+            нажмите <b>/start</b> в Telegram-боте:
+            <a href="https://t.me/SchoolBookDate_bot" target="_blank">
+                <img src="{% static 'images/telegram_icon.png' %}" alt="Telegram" class="telegram-icon">
+            </a>
+        </p>
+    </div>
+
     <div class="book-container" id="book-container">
-        <!-- Книги загружаются через JavaScript -->
+        <!-- Книги загружаются через Js -->
     </div>
 </div>
 
@@ -149,7 +161,6 @@
                                     ${book.cover_image ? `<img src="${book.cover_image}" alt="Обложка книги">` : ''}
                                     <p><strong>${book.title}</strong></p>
                                     <p>${book.author}</p>
-                                    
                                 </div>
                             `;
                             $('#book-container').append(bookHtml);

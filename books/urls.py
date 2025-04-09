@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views import register_chat
 
 urlpatterns = [
     path('', views.book_list, name='book_list'),
@@ -21,7 +22,9 @@ urlpatterns = [
     path('issue/add/', views.add_book_issue, name='add_book_issue'),
 
     path('issue/search/', views.ajax_issue_search, name='ajax_issue_search'),
-    path('issue/delete/<int:pk>/', views.delete_issue, name='delete_issue')
+    path('issue/delete/<int:pk>/', views.delete_issue, name='delete_issue'),
+    path('register-chat/', views.register_chat, name='register_chat'),
+
 
 
 

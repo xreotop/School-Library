@@ -1,7 +1,3 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import Book
-from .forms import BookForm
-from django.db.models import Q
 
 def book_list(request):
     search_type = request.GET.get('type', 'title')
@@ -23,20 +19,10 @@ def book_list(request):
     })
 
 
-from django.http import JsonResponse
 
-from django.http import JsonResponse
 from .forms import BookForm
 
-from urllib.request import urlretrieve
-import os
-from django.core.files import File
-from django.core.files.temp import NamedTemporaryFile
 
-import requests
-from django.core.files.base import ContentFile
-from urllib.parse import urlparse
-import os
 
 import os
 from urllib.parse import urlparse
@@ -76,10 +62,7 @@ def delete_book(request, pk):
     book = get_object_or_404(Book, pk=pk)
     book.delete()
     return redirect('book_list')
-from django.http import JsonResponse
 
-from django.http import JsonResponse
-from django.db.models import Q
 
 def autocomplete(request):
     term = request.GET.get('term', '')
@@ -141,10 +124,7 @@ def staff_login_view(request):
             return render(request, 'books/staff_login.html', {'error': 'Неверный пин-код'})
     return render(request, 'books/staff_login.html')
 
-import requests
-from django.http import JsonResponse
 
-from django.http import JsonResponse
 import requests
 
 def fetch_cover(request):
@@ -184,10 +164,7 @@ def fetch_cover(request):
     return JsonResponse({'image_urls': [], 'author': ''})
 from .models import Reader
 
-from django.shortcuts import render
-from django.http import JsonResponse
-from django.template.loader import render_to_string
-from .models import Reader  # замените на вашу модель
+
 
 def readers_list(request):
     readers = Reader.objects.all()
@@ -211,13 +188,7 @@ def delete_reader(request, telegram_username):
         return redirect('readers_list')
 
 # reader_login
-from .models import Reader
-from django.shortcuts import render, redirect
 
-
-from django.shortcuts import render, redirect
-from .models import Reader
-from django.contrib import messages
 
 
 def reader_login_view(request):
@@ -273,7 +244,7 @@ def reader_catalog(request):
         Reader.objects.get(id=reader_id)
     except Reader.DoesNotExist:
         request.session.flush()
-        messages.error(request, "Ваш аккаунт был удалён.")
+
         return redirect('reader_login')
 
     # Если всё ок, показываем каталог
@@ -293,9 +264,6 @@ def ajax_book_search(request):
 
 #  выдача книг
 from django.shortcuts import render, redirect
-from django.utils import timezone
-from datetime import timedelta
-from .models import BookIssue, Reader, Book
 from django.contrib import messages
 
 def book_issue_view(request):
@@ -313,6 +281,15 @@ from django.shortcuts import redirect
 from django.utils import timezone
 from datetime import timedelta
 from .models import BookIssue, Reader, Book
+from .utils import send_telegram_message
+
+from django.shortcuts import redirect
+from django.utils import timezone
+from datetime import timedelta
+from .models import BookIssue, Reader, Book
+
+
+from books.utils import send_telegram_message  # если send_telegram_message в utils.py
 
 def add_book_issue(request):
     if request.method == 'POST':
@@ -324,17 +301,62 @@ def add_book_issue(request):
             reader = Reader.objects.get(telegram_username=telegram)
             book = Book.objects.get(title=book_title)
 
-            BookIssue.objects.create(
+            issue = BookIssue.objects.create(
                 reader=reader,
                 book=book,
                 issued_by=staff,
                 issue_date=timezone.now().date(),
                 return_date=timezone.now().date() + timedelta(days=14)
             )
+
+            if reader.chat_id:
+                send_telegram_message(
+                    reader.chat_id,
+                    f"📚 Вам выдана книга: «{book.title}»\n"
+                    f"Дата выдачи: {issue.issue_date}\n"
+                    f"Дата возврата: {issue.return_date}"
+                )
+
         except (Reader.DoesNotExist, Book.DoesNotExist):
-            pass  # просто игнорируем ошибку
+            pass
 
     return redirect('book_issue')
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from books.models import Reader
+import json
+
+@csrf_exempt
+def register_chat(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            chat_id = data.get('chat_id')
+
+            if not username or not chat_id:
+                return JsonResponse({'error': 'Missing data'}, status=400)
+
+            reader = Reader.objects.filter(telegram_username=username).first()
+            if reader:
+                reader.chat_id = chat_id
+                reader.save()
+                return JsonResponse({'message': 'Chat ID registered'}, status=200)
+            else:
+                return JsonResponse({'error': 'Reader not found'}, status=404)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    return JsonResponse({'error': 'Only POST allowed'}, status=405)
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from books.models import Reader
+import json
+
+
+
+
 
 # views.py
 from django.template.loader import render_to_string
@@ -349,7 +371,7 @@ def delete_issue(request, pk):
     if request.method == 'POST':
         issue = get_object_or_404(BookIssue, pk=pk)
         issue.delete()
-        messages.success(request, "Запись о выдаче удалена.")
+
     return redirect('book_issue')
 
 

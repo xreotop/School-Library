@@ -135,3 +135,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 LANGUAGE_CODE = 'ru'
+TELEGRAM_BOT_TOKEN = '7473785152:AAE0Ezxl6tmpcy0_aL7EBFbF0rr2j_aqvds'
