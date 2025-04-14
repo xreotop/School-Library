@@ -1,8 +1,10 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>Вход для читателя</title>
+     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <style>
         body {
             font-family: Arial;
@@ -66,6 +68,12 @@
             margin-bottom: 10px;
             text-align: center;
         }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -83,13 +91,17 @@
 <form method="post" action="{% url 'reader_login' %}">
     {% csrf_token %}
     <input type="text" name="telegram_username" placeholder="Логин Telegram (с @)" required>
-    <input type="password" name="password" placeholder="Пароль" required>
+    <input type="password" name="password" id="login-password" placeholder="Пароль" required>
+    <div class="checkbox-container">
+        <input type="checkbox" id="toggle-login-password">
+        <label for="toggle-login-password">Показать пароль</label>
+    </div>
     <button type="submit">Войти</button>
 </form>
 
 <div class="register-link" id="openRegister">Нет аккаунта? Зарегистрироваться</div>
 
-<!-- 🔐 Модальное окно регистрации -->
+<!--  Модальное окно регистрации -->
 <div id="registerModal">
     <div class="modal-content">
         <div class="close-modal" id="closeRegister">×</div>
@@ -98,13 +110,25 @@
             {% csrf_token %}
             <input type="text" name="full_name" placeholder="Имя и фамилия" required>
             <input type="text" name="telegram_username" placeholder="Telegram (с @)" required>
-            <input type="password" name="password" placeholder="Пароль" required>
+            <input type="password" name="password" id="register-password" placeholder="Пароль" required>
+            <div class="checkbox-container">
+                <input type="checkbox" id="toggle-register-password">
+                <label for="toggle-register-password">Показать пароль</label>
+            </div>
             <button type="submit">Зарегистрироваться</button>
         </form>
     </div>
 </div>
-
+<footer class="site-footer">
+    <div class="footer-content">
+        <p>Made by Andrey Kovalev, Vladivostok, Russia</p>
+        <a href="https://t.me/zxcikona20" target="_blank" title="Telegram">
+            <img src="{% static 'images/telegram_icon.png' %}" alt="Telegram" class="telegram-icon">
+        </a>
+    </div>
+</footer>
 <script>
+    // Окно регистрации
     const registerModal = document.getElementById("registerModal");
     const openBtn = document.getElementById("openRegister");
     const closeBtn = document.getElementById("closeRegister");
@@ -114,6 +138,17 @@
     window.onclick = (e) => {
         if (e.target === registerModal) registerModal.style.display = "none";
     };
+
+    // Показ/скрытие пароля
+    document.getElementById('toggle-login-password').addEventListener('change', function () {
+        const input = document.getElementById('login-password');
+        input.type = this.checked ? 'text' : 'password';
+    });
+
+    document.getElementById('toggle-register-password').addEventListener('change', function () {
+        const input = document.getElementById('register-password');
+        input.type = this.checked ? 'text' : 'password';
+    });
 </script>
 
 </body>

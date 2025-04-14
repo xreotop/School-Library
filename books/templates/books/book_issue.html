@@ -46,6 +46,11 @@
         .book-issue-table th {
             background: #f0f0f0;
         }
+        .book-issue-table th:first-child,
+        .book-issue-table td:first-child {
+            width: 50px;
+            text-align: center;
+        }
         #search-reader {
             margin-top: 20px;
             margin-bottom: 20px;
@@ -55,7 +60,7 @@
             font-size: 16px;
         }
         .delete-button {
-            background-color: red;
+            background-color: #4CAF50;
             color: white;
             padding: 5px 10px;
             font-size: 14px;
@@ -64,7 +69,7 @@
             cursor: pointer;
         }
         .delete-button:hover {
-            background-color: darkred;
+            background-color: #388e3c;
         }
         .top-bar {
             display: flex;
@@ -98,6 +103,26 @@
         .dropdown-list div:hover {
             background-color: #eee;
         }
+
+        .table-header-inline {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .overdue-inline-link {
+            font-size: 24px; /* такой же, как у h2 */
+            font-weight: bold;
+            color: #100000;
+            text-decoration: none; /* убрать подчёркивание */
+        }
+        
+        .overdue-inline-link:hover {
+            text-decoration: none;
+            opacity: 0.8; /* небольшой эффект при наведении */
+        }
+
     </style>
 </head>
 <body>
@@ -107,49 +132,62 @@
         <a href="{% url 'book_list' %}" class="header-title">УПРАВЛЕНИЕ КНИЖНЫМ ФОНДОМ</a>
         <a href="{% url 'book_issue' %}" class="header-link">ВЫДАЧА КНИГ</a>
         <a href="{% url 'readers_list' %}" class="header-link">ЧИТАТЕЛИ</a>
-        <a href="#" class="header-link">СТАТИСТИКА</a>
+        <a href="{% url 'statistics' %}" class="header-link">СТАТИСТИКА</a>
         <a href="{% url 'staff_login' %}" class="header-link">ВЫХОД</a>
     </div>
 </div>
 
 <div class="content">
-    <h2>Выданные книги</h2>
-    <div class="top-bar">
+
+    <div class="table-header-inline">
+        <h2 id="table-title">Таблица выданных книг</h2>
+        <a href="#" class="overdue-inline-link" id="toggle-overdue">Таблица должников</a>
+    </div>
+
+    <div class="top-bar" id="main-controls">
         <input type="text" id="search-reader" placeholder="Поиск по имени и фамилии...">
         <button id="openIssueModal" class="add-button">➕ Выдать книгу</button>
     </div>
 
-    <table class="book-issue-table">
-        <thead>
-        <tr>
-            <th>Логин Telegram</th>
-            <th>Имя и фамилия</th>
-            <th>Книга</th>
-            <th>Сотрудник</th>
-            <th>Дата выдачи</th>
-            <th>Дата возврата</th>
-            <th>Удалить информацию</th>
-        </tr>
-        </thead>
-        <tbody id="issue-body">
-        {% for issue in issues %}
+    <!-- Таблица с выданными книгами -->
+    <div id="issue-section">
+        <table class="book-issue-table">
+            <thead>
             <tr>
-                <td>{{ issue.reader.telegram_username }}</td>
-                <td>{{ issue.reader.full_name }}</td>
-                <td>{{ issue.book.title }}</td>
-                <td>{{ issue.issued_by }}</td>
-                <td>{{ issue.issue_date }}</td>
-                <td>{{ issue.return_date }}</td>
-                <td>
-                    <form method="post" action="{% url 'delete_issue' issue.pk %}" style="margin:0">
-                        {% csrf_token %}
-                        <button type="submit" class="delete-button">Удалить</button>
-                    </form>
-                </td>
+                <th>№</th>
+                <th>Логин Telegram</th>
+                <th>Имя и фамилия</th>
+                <th>Книга</th>
+                <th>Сотрудник</th>
+                <th>Дата выдачи</th>
+                <th>Дата возврата</th>
+                <th>Подтвердить возвращение книги</th>
             </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+            </thead>
+            <tbody id="issue-body">
+            {% for issue in issues %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ issue.reader.telegram_username }}</td>
+                    <td>{{ issue.reader.full_name }}</td>
+                    <td>{{ issue.book.title }}</td>
+                    <td>{{ issue.issued_by }}</td>
+                    <td>{{ issue.issue_date }}</td>
+                    <td>{{ issue.return_date }}</td>
+                    <td>
+                        <form method="post" action="{% url 'delete_issue' issue.pk %}" style="margin:0">
+                            {% csrf_token %}
+                            <button type="submit" class="delete-button">Да</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Таблица с должниками -->
+    <div id="overdue-section" style="display: none;"></div>
 </div>
 
 <!-- Модальное окно -->
@@ -160,16 +198,36 @@
         <form method="post" action="{% url 'add_book_issue' %}">
             {% csrf_token %}
             <div>
-                <input type="text" name="telegram_username" id="telegramField" placeholder="Логин Telegram" required>
-                <span class="dropdown-btn" onclick="toggleDropdown('telegramDropdown')">›</span>
-                <div class="dropdown-list" id="telegramDropdown">
+                <input type="text" name="full_name" id="nameField" placeholder="Имя и фамилия" required
+                       style="width: 350px; padding: 10px; margin-bottom: 10px;">
+                <span class="dropdown-btn" onclick="toggleDropdown('nameDropdown')">›</span>
+                <div class="dropdown-list" id="nameDropdown">
                     {% for reader in readers %}
-                        <div onclick="selectValue('telegramField', '{{ reader.telegram_username }}')">{{ reader.telegram_username }}</div>
+                        <div onclick="selectReader('{{ reader.full_name }}', '{{ reader.telegram_username|default_if_none:"" }}')"
+                             data-fullname="{{ reader.full_name }}"
+                             data-telegram="{{ reader.telegram_username|default_if_none:"" }}">
+                            {{ reader.full_name }}{% if not reader.telegram_username %} (без Telegram){% else %} ({{ reader.telegram_username }}){% endif %}
+                        </div>
                     {% endfor %}
                 </div>
             </div>
+
             <div>
-                <input type="text" name="book_title" id="bookField" placeholder="Название книги" required>
+                <input type="text" name="telegram_username" id="telegramField" placeholder="Логин Telegram (необязательно)"
+                       style="width: 350px; padding: 10px; margin-bottom: 10px;">
+                <span class="dropdown-btn" onclick="toggleDropdown('telegramDropdown')">›</span>
+                <div class="dropdown-list" id="telegramDropdown">
+                    {% for reader in readers %}
+                        <div onclick="selectValue('telegramField', '{{ reader.telegram_username }}')">
+                            {{ reader.telegram_username }}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div>
+                <input type="text" name="book_title" id="bookField" placeholder="Название книги" required
+                       style="width: 350px; padding: 10px; margin-bottom: 10px;">
                 <span class="dropdown-btn" onclick="toggleDropdown('bookDropdown')">›</span>
                 <div class="dropdown-list" id="bookDropdown">
                     {% for book in books %}
@@ -177,12 +235,23 @@
                     {% endfor %}
                 </div>
             </div>
-            <input type="text" name="issued_by" placeholder="Сотрудник" required>
-            <button type="submit">Сохранить</button>
+
+            <input type="text" name="issued_by" placeholder="Сотрудник (необязательно)"
+                   style="width: 350px; padding: 10px; margin-bottom: 10px;">
+            <button type="submit" style="padding: 10px 20px;">Сохранить</button>
         </form>
     </div>
 </div>
 
+
+<footer class="site-footer">
+    <div class="footer-content">
+        <p>Made by Andrey Kovalev, Vladivostok, Russia</p>
+        <a href="https://t.me/zxcikona20" target="_blank" title="Telegram">
+            <img src="{% static 'images/telegram_icon.png' %}" alt="Telegram" class="telegram-icon">
+        </a>
+    </div>
+</footer>
 <script>
     const modal = document.getElementById('issueModal');
     const openBtn = document.getElementById('openIssueModal');
@@ -208,6 +277,107 @@
         document.getElementById(fieldId).value = value;
         document.querySelectorAll('.dropdown-list').forEach(el => el.style.display = 'none');
     }
+    function selectReader(fullName, telegramUsername) {
+        document.getElementById("nameField").value = fullName;
+        document.getElementById("telegramField").value = telegramUsername;
+        document.querySelectorAll('.dropdown-list').forEach(el => el.style.display = 'none');
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        function setupLiveFilter(inputId, dropdownId) {
+            const input = document.getElementById(inputId);
+            const dropdown = document.getElementById(dropdownId);
+            const options = dropdown.querySelectorAll('div');
+
+            input.addEventListener('input', function () {
+                const filter = input.value.toLowerCase();
+                options.forEach(option => {
+                    option.style.display = option.textContent.toLowerCase().includes(filter) ? '' : 'none';
+                });
+                dropdown.style.display = 'block';
+            });
+        }
+
+        setupLiveFilter('telegramField', 'telegramDropdown');
+        setupLiveFilter('bookField', 'bookDropdown');
+        setupLiveFilter('nameField', 'nameDropdown'); // 👈 добавили имя
+    });
+
+    $('#toggle-overdue').on('click', function (e) {
+    e.preventDefault();
+
+    const $overdue = $('#overdue-section');
+    const $issue = $('#issue-section');
+    const $controls = $('#main-controls');
+    const $title = $('#table-title');
+
+    if ($overdue.is(':visible')) {
+        $overdue.hide();
+        $issue.show();
+        $controls.show();
+        $(this).text('Таблица должников');
+        $title.text('Таблица выданных книг');
+    } else {
+        $.get("{% url 'overdue_issues_partial' %}", function (data) {
+            $overdue.html(data.html).show();
+            $issue.hide();
+            $controls.hide();
+            $('#toggle-overdue').text('⬅ НАЗАД');
+            $title.text('Таблица должников');
+        });
+    }
+    });
+    
+    // 🔍 Поиск среди должников в реальном времени
+    $(document).on('input', '#search-overdue', function () {
+        const query = $(this).val();
+        $.get("{% url 'ajax_overdue_search' %}", { q: query }, function (data) {
+            $('#overdue-section').html(data.html);
+        });
+    });
+    const readerMap = [];
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll("#nameDropdown div").forEach(item => {
+            readerMap.push({
+                fullName: item.dataset.fullname,
+                telegram: item.dataset.telegram || ""
+            });
+        });
+    });
+
+    function selectReader(fullName, telegramUsername) {
+        document.getElementById("nameField").value = fullName;
+        document.getElementById("telegramField").value = telegramUsername;
+        document.querySelectorAll('.dropdown-list').forEach(el => el.style.display = 'none');
+    }
+
+    // ✅ Валидация: имя и логин должны соответствовать
+    document.querySelector("#issueModal form").addEventListener("submit", function (e) {
+    const fullName = document.getElementById("nameField").value.trim();
+    const telegramInput = document.getElementById("telegramField").value.trim();
+
+    const matches = readerMap.filter(r => r.fullName === fullName);
+
+    if (matches.length === 1) {
+        const expectedTelegram = matches[0].telegram;
+        if (expectedTelegram && telegramInput !== expectedTelegram) {
+            e.preventDefault();
+            alert(`❌ Telegram логин "${telegramInput}" не соответствует имени "${fullName}". Ожидался: ${expectedTelegram}`);
+        }
+    } else if (matches.length > 1) {
+        // Несколько однофамильцев — проверяем по Telegram
+        const exact = matches.find(r => r.telegram === telegramInput);
+        if (!exact) {
+            e.preventDefault();
+            const possible = matches.map(r => r.telegram || "—").join(", ");
+            alert(`❌ Имя "${fullName}" не уникально. Укажите Telegram логин. Возможные: ${possible}`);
+        }
+    }
+    });
+
+
+
+
 </script>
 
 </body>

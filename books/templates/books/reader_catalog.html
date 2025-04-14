@@ -17,10 +17,10 @@
         .header-bar {
             background-color: #ffffff;
             padding: 10px 20px;
-            border-bottom: 1px solid #ccc;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            
         }
         .header-nav {
             display: flex;
@@ -41,7 +41,8 @@
         }
         .content {
             flex: 1;
-            padding: 20px;
+            padding: 10px;
+            margin-bottom: 5px;
         }
         h2 {
             margin-bottom: 20px;
@@ -62,14 +63,7 @@
             flex-wrap: wrap;
             gap: 20px;
             justify-content: center;
-        }
-        .book-card {
-            background: white;
-            padding: 10px;
-            border-radius: 10px;
-            box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.2);
-            width: 200px;
-            text-align: center;
+            margin-bottom: 20px;
         }
         .book-card img {
             width: 100%;
@@ -105,9 +99,57 @@
         .telegram-icon:hover {
             transform: scale(1.2);
         }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: flex; /* ВАЖНО */
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            animation: fadeInUp 0.3s ease;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 22px;
+            cursor: pointer;
+            color: red;
+        }
+
+
     </style>
 </head>
 <body>
+
 
 <div class="header-bar">
     <div class="header-nav">
@@ -115,7 +157,6 @@
         <a href="{% url 'reader_login' %}" class="header-link">Выход</a>
     </div>
 </div>
-
 <div class="content">
     <div class="search-wrapper">
         <input type="text" id="search-box" placeholder="Поиск по названию или автору...">
@@ -130,11 +171,11 @@
             </a>
         </p>
     </div>
-
-    <div class="book-container" id="book-container">
-        <!-- Книги загружаются через Js -->
-    </div>
 </div>
+<div class="book-container" id="book-container">
+    <!-- Динамически загружается через JS -->
+</div>
+
 
 <footer class="site-footer">
     <div class="footer-content">
@@ -144,42 +185,142 @@
         </a>
     </div>
 </footer>
+<!-- Модальное окно для добавления отзыва -->
+<div id="reviewModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h3>Добавить отзыв</h3>
+        <form id="reviewModalForm">
+            <input type="hidden" id="modalBookId" name="book_id">
+            <textarea id="modalReviewText" name="review" placeholder="Введите ваш отзыв..." rows="4" style="width: 100%; margin-bottom: 10px;" required></textarea>
+            <button type="submit" style="padding: 10px 20px;">Отправить</button>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно для просмотра отзывов -->
+<div id="viewReviewsModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h3>Отзывы о книге</h3>
+        <div id="reviewsContent">
+            <p>Загрузка...</p>
+        </div>
+    </div>
+</div>
 
 <script>
     $(document).ready(function () {
-        function fetchBooks(query = '') {
-            $.ajax({
-                url: "{% url 'ajax_book_search' %}",
-                data: { 'q': query },
-                dataType: 'json',
-                success: function (data) {
-                    $('#book-container').empty();
-                    if (data.books.length > 0) {
-                        data.books.forEach(function (book) {
-                            const bookHtml = `
-                                <div class="book-card">
-                                    ${book.cover_image ? `<img src="${book.cover_image}" alt="Обложка книги">` : ''}
-                                    <p><strong>${book.title}</strong></p>
-                                    <p>${book.author}</p>
+    function fetchBooks(query = '') {
+        $.ajax({
+            url: "{% url 'ajax_book_search' %}",
+            data: { 'q': query },
+            dataType: 'json',
+            success: function (data) {
+                $('#book-container').empty();
+                if (data.books.length > 0) {
+                    data.books.forEach(function (book) {
+                        const bookHtml = `
+                            <div class="book-card">
+                                ${book.cover_image ? `<img src="${book.cover_image}" alt="Обложка книги">` : ''}
+                                <p><strong>${book.title}</strong></p>
+                                <p>${book.author}</p>
+
+                                <div>
+                                    <button class="like-btn" data-id="${book.id}">👍 ${book.likes || 0}</button>
+                                    <button class="dislike-btn" data-id="${book.id}">👎 ${book.dislikes || 0}</button>
                                 </div>
-                            `;
-                            $('#book-container').append(bookHtml);
-                        });
-                    } else {
-                        $('#book-container').html('<p>Книги не найдены.</p>');
-                    }
+
+                                <button class="open-review-modal" data-id="${book.id}" style="margin-top: 10px;">📝 Добавить отзыв</button>
+                                <button class="open-view-reviews" data-id="${book.id}" style="margin-top: 5px;">📖 Смотреть отзывы</button>
+                            </div>`;
+                        $('#book-container').append(bookHtml);
+                    });
+                } else {
+                    $('#book-container').html('<p>Книги не найдены.</p>');
                 }
-            });
-        }
+            }
+        });
+    }
 
-        fetchBooks();
+    fetchBooks();
 
-        $('#search-box').on('input', function () {
-            const query = $(this).val();
-            fetchBooks(query);
+    $('#search-box').on('input', function () {
+        fetchBooks($(this).val());
+    });
+
+    $(document).on('click', '.like-btn, .dislike-btn', function () {
+        const bookId = $(this).data('id');
+        const type = $(this).hasClass('like-btn') ? 'like' : 'dislike';
+
+        $.post("{% url 'book_reaction' %}", {
+            book_id: bookId,
+            type: type,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function () {
+            fetchBooks($('#search-box').val());
         });
     });
+
+    // открыть модалку для отзыва
+    $(document).on('click', '.open-review-modal', function () {
+        const bookId = $(this).data('id');
+        $('#modalBookId').val(bookId);
+        $('#modalReviewText').val('');
+        $('#reviewModal').fadeIn();
+    });
+
+    $('.close-modal').click(function () {
+        $('.modal').fadeOut();
+    });
+
+    $(window).click(function (e) {
+        if ($(e.target).hasClass('modal')) {
+            $('.modal').fadeOut();
+        }
+    });
+
+    // отправка отзыва
+    $('#reviewModalForm').submit(function (e) {
+        e.preventDefault();
+        const bookId = $('#modalBookId').val();
+        const review = $('#modalReviewText').val();
+
+        $.post("{% url 'submit_review' %}", {
+            book_id: bookId,
+            review: review,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function () {
+            alert('Спасибо за отзыв!');
+            $('#reviewModal').fadeOut();
+            fetchBooks($('#search-box').val());
+        });
+    });
+
+    // показать отзывы
+    $(document).on('click', '.open-view-reviews', function () {
+        const bookId = $(this).data('id');
+
+        $.get(`/books/book/${bookId}/reviews/`, function (data) {
+            let html = '';
+            if (data.reviews.length > 0) {
+                data.reviews.forEach(r => {
+                    html += `<div style="margin-bottom: 10px;">
+                                <strong>${r.reader}</strong><br>
+                                <span>${r.comment}</span>
+                             </div>`;
+                });
+            } else {
+                html = '<p>Отзывов пока нет.</p>';
+            }
+            $('#reviewsContent').html(html);
+            $('#viewReviewsModal').fadeIn();
+        });
+    });
+    });
 </script>
+
+
 
 </body>
 </html>

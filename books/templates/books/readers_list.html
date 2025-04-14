@@ -12,10 +12,56 @@
             margin-top: 20px;
             margin-bottom: 20px;
             width: 100%;
-            max-width: 400px;
+            max-width: 500px;
             padding: 10px;
             font-size: 16px;
         }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 600px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .close-modal {
+            float: right;
+            font-size: 20px;
+            cursor: pointer;
+            color: red;
+        }
+        .readers-table th:first-child,
+        .readers-table td:first-child {
+            width: 50px;
+            text-align: center;
+        }
+        
+
+       #openAddReaderModal {
+        background-color: #4CAF50;
+        color: white;
+        font-weight: bold;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: 0.2s;
+        }
+    
+        #openAddReaderModal:hover {
+            background-color: #388e3c;
+            color: white;
+        }
+
     </style>
 </head>
 <body>
@@ -25,21 +71,27 @@
         <a href="{% url 'book_list' %}" class="header-title">УПРАВЛЕНИЕ КНИЖНЫМ ФОНДОМ</a>
         <a href="{% url 'book_issue' %}" class="header-link">ВЫДАЧА КНИГ</a>
         <a href="{% url 'readers_list' %}" class="header-link">ЧИТАТЕЛИ</a>
-        <a href="#" class="header-link">СТАТИСТИКА</a>
+        <a href="{% url 'statistics' %}" class="header-link">СТАТИСТИКА</a>
         <a href="{% url 'staff_login' %}" class="header-link">ВЫХОД</a>
     </div>
 </div>
 
 <div class="content">
     <h2>Зарегистрированные читатели</h2>
-    <input type="text" id="search-reader" placeholder="Поиск по имени и фамилии...">
+    <div style="display: flex; justify-content: flex-start; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
+        <input type="text" id="search-reader" placeholder="Поиск по имени и фамилии..." style="flex: 1; max-width: 400px; padding: 10px; font-size: 16px;">
+        <button id="openAddReaderModal">➕ Добавить нового читателя</button>
+    </div>
+
+
 
     <table class="readers-table">
         <thead>
             <tr>
+                <th>№</th>
                 <th>Имя и фамилия</th>
                 <th>Telegram</th>
-                <th>Удалить</th>
+                <th>Удалить из системы</th>
             </tr>
         </thead>
         <tbody id="readers-body">
@@ -47,6 +99,23 @@
         </tbody>
     </table>
 </div>
+<div id="addReaderModal" class="modal">
+    <div class="modal-content" > 
+        <span id="closeAddReaderModal" class="close-modal">&times;</span>
+        <h3>Добавление нового читателя</h3>
+        <form method="POST" action="{% url 'add_reader' %}">
+            {% csrf_token %}
+            <input type="text" name="full_name" placeholder="Имя и фамилия" required style="width: 350px; padding: 10px; margin-bottom: 10px;">
+            <input type="text" name="telegram_username" placeholder="Логин Telegram должен начинаться с @ (необязательно)" style="width: 350px; padding: 10px; margin-bottom: 10px;">
+            <input type="password" id="passwordField" name="password" placeholder="Пароль (необязательно)" style="width: 350px; padding: 10px; margin-bottom: 10px;">
+            <label><input type="checkbox" onclick="togglePasswordVisibility()"> Показать пароль</label>
+            <button type="submit" style="padding: 10px 20px;">Добавить</button>
+        </form>
+    </div>
+</div>
+
+
+
 
 <footer class="site-footer">
     <div class="footer-content">
@@ -67,7 +136,29 @@
             });
         });
     });
+
+    // Модалка добавления читателя
+    const modal = document.getElementById("addReaderModal");
+    document.getElementById("openAddReaderModal").onclick = () => modal.style.display = "flex";
+    document.getElementById("closeAddReaderModal").onclick = () => modal.style.display = "none";
+    window.onclick = (e) => { if (e.target === modal) modal.style.display = "none"; };
+
+    function togglePasswordVisibility() {
+        const field = document.getElementById("passwordField");
+        field.type = field.type === "password" ? "text" : "password";
+    }
+
+    //  Проверка логина Telegram
+    document.querySelector("#addReaderModal form").addEventListener("submit", function(e) {
+        const telegramInput = this.querySelector("input[name='telegram_username']");
+        const value = telegramInput.value.trim();
+        if (value && !value.startsWith('@')) {
+            e.preventDefault();
+            alert("Telegram логин должен начинаться с символа @");
+        }
+    });
 </script>
+
 
 </body>
 </html>

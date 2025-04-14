@@ -1,9 +1,10 @@
 {% for reader in readers %}
 <tr>
+    <td>{{ forloop.counter }}</td>
     <td>{{ reader.full_name }}</td>
-    <td>{{ reader.telegram_username }}</td>
+    <td>{{ reader.telegram_username|default:"—" }}</td>
     <td>
-        <form method="POST" action="{% url 'delete_reader' reader.telegram_username %}">
+        <form method="POST" action="{% url 'delete_reader' reader.id %}">
             {% csrf_token %}
             <button type="submit" style="background-color: #e53935; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Удалить</button>
         </form>

@@ -1,8 +1,10 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>Вход для сотрудника</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,6 +13,7 @@
             align-items: center;
             height: 100vh;
             margin: 0;
+            background-color: white;
         }
         .login-box {
             text-align: center;
@@ -19,7 +22,7 @@
             background-color: #fff;
             box-shadow: 5px 5px 10px rgba(0,0,0,0.2);
         }
-        input {
+        input[type="password"], input[type="text"] {
             padding: 10px;
             margin: 10px;
             width: 200px;
@@ -31,6 +34,13 @@
             font-size: 16px;
             box-shadow: 3px 3px 5px #999;
         }
+        .checkbox-container {
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
         .error {
             color: red;
             margin-top: 10px;
@@ -38,16 +48,34 @@
     </style>
 </head>
 <body>
-    <div class="login-box">
-        <h2>Вход в систему для сотрудника</h2>
-        <form method="POST">
-            {% csrf_token %}
-            <input type="password" name="pin" placeholder="Введите пин-код"><br>
-            <button type="submit">Войти</button>
-        </form>
-        {% if error %}
-            <div class="error">{{ error }}</div>
-        {% endif %}
+<div class="login-box">
+    <h2>Вход в систему для сотрудника</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <input type="password" name="pin" id="pin-input" placeholder="Введите пин-код"><br>
+        <div class="checkbox-container">
+            <input type="checkbox" id="show-password">
+            <label for="show-password">Показать пароль</label>
+        </div>
+        <button type="submit">Войти</button>
+    </form>
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
+</div>
+<footer class="site-footer">
+    <div class="footer-content">
+        <p>Made by Andrey Kovalev, Vladivostok, Russia</p>
+        <a href="https://t.me/zxcikona20" target="_blank" title="Telegram">
+            <img src="{% static 'images/telegram_icon.png' %}" alt="Telegram" class="telegram-icon">
+        </a>
     </div>
+</footer>
+<script>
+    document.getElementById("show-password").addEventListener("change", function () {
+        const pinInput = document.getElementById("pin-input");
+        pinInput.type = this.checked ? "text" : "password";
+    });
+</script>
 </body>
 </html>

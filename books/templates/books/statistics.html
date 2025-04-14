@@ -1,0 +1,244 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Статистика</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header-bar {
+            background: #ffffff;
+            
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 20px;
+        }
+
+        .header-link, .header-title {
+            text-decoration: none;
+            color: black;
+            font-weight: bold;
+        }
+
+        h1, h2 {
+            margin-top: 20px;
+        }
+
+        .flex-row {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .section-box {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            flex: 1;
+        }
+
+        .stat-box {
+            margin-bottom: 10px;
+            border-left: 5px solid #4CAF50;
+            padding-left: 10px;
+        }
+
+        ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            table-layout: fixed;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th:nth-child(1), td:nth-child(1) {
+            width: 150px;
+            min-width: 150px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        th:nth-child(2), td:nth-child(2) {
+            width: 160px;
+            min-width: 160px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        th:nth-child(3), td:nth-child(3) {
+            width: 160px;
+            min-width: 160px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+            
+
+        th:nth-child(5), td:nth-child(5) {
+            width: 120px;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .delete-button {
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .delete-button:hover {
+            background-color: #b71c1c;
+        }
+
+        .site-footer {
+            background: #f1f1f1;
+            border-top: 1px solid #ccc;
+            padding: 15px 10px;
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .telegram-icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        .delete-all-wrapper {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<header class="header-bar">
+    <div class="header-nav">
+        <a href="{% url 'book_list' %}" class="header-title">УПРАВЛЕНИЕ КНИЖНЫМ ФОНДОМ</a>
+        <a href="{% url 'book_issue' %}" class="header-link">ВЫДАЧА КНИГ</a>
+        <a href="{% url 'readers_list' %}" class="header-link">ЧИТАТЕЛИ</a>
+        <a href="{% url 'statistics' %}" class="header-link">СТАТИСТИКА</a>
+        <a href="{% url 'staff_login' %}" class="header-link">ВЫХОД</a>
+    </div>
+</header>
+
+<main>
+    <h1>📊 Статистика библиотеки</h1>
+
+    <div class="flex-row">
+        <div class="section-box">
+            <h2>Популярные книги (по количеству лайков)</h2>
+            <ul>
+                {% for book in popular_books %}
+                    <li>{{ book.title }} — {{ book.likes }}</li>
+                {% empty %}
+                    <li>Нет данных.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="section-box">
+            <h2>Непопулярные книги (по количеству дизлайков)</h2>
+            <ul>
+                {% for book in unpopular_books %}
+                    <li>{{ book.title }} — {{ book.dislikes }}</li>
+                {% empty %}
+                    <li>Нет данных.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="section-box">
+            <h2>Общая статистика</h2>
+            <div class="stat-box">Всего книг: <strong>{{ total_books }}</strong></div>
+            <div class="stat-box">Выдано книг: <strong>{{ issued_books }}</strong></div>
+            <div class="stat-box">Невозвращённые книги: <strong>{{ overdue_books }}</strong></div>
+            <div class="stat-box">Всего читателей: <strong>{{ total_readers }}</strong></div>
+        </div>
+    </div>
+
+    <!-- 🗣️ Отзывы теперь внизу -->
+    <section class="table-wrapper">
+        <h2>Все отзывы</h2>
+
+        <div class="delete-all-wrapper">
+            <form method="post" action="{% url 'delete_all_feedback' %}">
+                {% csrf_token %}
+                <button type="submit" class="delete-button" onclick="return confirm('Удалить ВСЕ отзывы?')">Удалить все отзывы</button>
+            </form>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Книга</th>
+                    <th>Читатель</th>
+                    <th>Telegram</th> 
+                    <th>Отзыв</th>
+                    <th>Действие</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fb in all_feedback %}
+                    <tr>
+                        <td>{{ fb.book.title }}</td>
+                        <td>{{ fb.reader.full_name }}</td>
+                        <td>{{ fb.reader.telegram_username|default:"—" }}</td> 
+                        <td>{{ fb.comment }}</td>
+                        <td>
+                            <form method="post" action="{% url 'delete_feedback' fb.id %}">
+                                {% csrf_token %}
+                                <button class="delete-button" onclick="return confirm('Удалить отзыв?')">Удалить</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4">Отзывы отсутствуют</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</main>
+
+
+
+</body>
+</html>

@@ -164,7 +164,7 @@ def fetch_cover(request):
     return JsonResponse({'image_urls': [], 'author': ''})
 from .models import Reader
 
-
+#читатели список
 
 def readers_list(request):
     readers = Reader.objects.all()
@@ -178,14 +178,38 @@ def ajax_reader_search(request):
 
 
 from django.shortcuts import get_object_or_404, redirect
-def delete_reader(request, telegram_username):
+def delete_reader(request, reader_id):
+    reader = get_object_or_404(Reader, id=reader_id)
     if request.method == 'POST':
-        reader = get_object_or_404(Reader, telegram_username=telegram_username)
-        session_reader_id = request.session.get('reader_id')
-        # Удаляе читателя
         reader.delete()
-        # Если другой пользователь — просто возвращаемся
-        return redirect('readers_list')
+    return redirect('readers_list')
+from django.views.decorators.csrf import csrf_protect
+from django.shortcuts import redirect
+from .models import Reader
+
+from django.views.decorators.csrf import csrf_protect
+from django.contrib import messages
+from django.views.decorators.csrf import csrf_protect
+from django.shortcuts import redirect
+
+@csrf_protect
+def add_reader(request):
+    if request.method == 'POST':
+        full_name = request.POST.get('full_name')
+        telegram = request.POST.get('telegram_username', '').strip() or None
+        password = request.POST.get('password', '')
+
+        if telegram and not telegram.startswith('@'):
+            return redirect('readers_list')
+
+        if full_name:
+            reader = Reader(full_name=full_name, telegram_username=telegram)
+            reader.set_password(password or '')  # безопасный хеш
+            reader.save()
+
+    return redirect('readers_list')
+
+
 
 # reader_login
 
@@ -198,8 +222,8 @@ def reader_login_view(request):
 
         try:
             reader = Reader.objects.get(telegram_username=telegram)
-            if reader.password == password:
-                request.session['reader_id'] = reader.id  # сохраняем ID в сессию
+            if reader.check_password(password):
+                request.session['reader_id'] = reader.id
                 return redirect('reader_catalog')
             else:
                 messages.error(request, "Неверный пароль.")
@@ -208,6 +232,8 @@ def reader_login_view(request):
 
     return render(request, 'books/reader_login.html')
 
+
+from django.contrib import messages
 
 def reader_register_view(request):
     if request.method == 'POST':
@@ -223,11 +249,15 @@ def reader_register_view(request):
             messages.error(request, "Пользователь с таким Telegram уже зарегистрирован.")
             return render(request, 'books/reader_login.html')
 
-        Reader.objects.create(full_name=full_name, telegram_username=telegram, password=password)
+        reader = Reader(full_name=full_name, telegram_username=telegram)
+        reader.set_password(password)  # хешируем
+        reader.save()
+
         messages.success(request, "Регистрация успешна. Теперь войдите.")
         return redirect('reader_login')
 
     return render(request, 'books/reader_login.html')
+
 from django.shortcuts import render
 from django.http import JsonResponse
 from .models import Book
@@ -239,7 +269,7 @@ def reader_catalog(request):
     if not reader_id:
         return redirect('reader_login')
 
-    # 💥 Проверяем, существует ли читатель
+    #  Проверяем, существует ли читатель
     try:
         Reader.objects.get(id=reader_id)
     except Reader.DoesNotExist:
@@ -251,16 +281,31 @@ def reader_catalog(request):
     books = Book.objects.all()
     return render(request, 'books/reader_catalog.html', {'books': books})
 
+from django.http import JsonResponse
+from django.db.models import Q, Count
+from .models import Book, BookFeedback
+
 def ajax_book_search(request):
     query = request.GET.get('q', '')
+    books = Book.objects.all()
     if query:
-        books = Book.objects.filter(
-            Q(title__icontains=query) | Q(author__icontains=query)
-        )
-    else:
-        books = Book.objects.all()
-    data = [{'title': book.title, 'author': book.author, 'cover_image': book.cover_image.url if book.cover_image else None} for book in books]
+        books = books.filter(Q(title__icontains=query) | Q(author__icontains=query))
+
+    data = []
+    for book in books:
+        likes = BookFeedback.objects.filter(book=book, is_like=True).count()
+        dislikes = BookFeedback.objects.filter(book=book, is_like=False).count()
+        data.append({
+            'id': book.id,
+            'title': book.title,
+            'author': book.author,
+            'cover_image': book.cover_image.url if book.cover_image else None,
+            'likes': likes,
+            'dislikes': dislikes,
+        })
+
     return JsonResponse({'books': data})
+
 
 #  выдача книг
 from django.shortcuts import render, redirect
@@ -276,13 +321,6 @@ def book_issue_view(request):
         'books': books
     })
 
-
-from django.shortcuts import redirect
-from django.utils import timezone
-from datetime import timedelta
-from .models import BookIssue, Reader, Book
-from .utils import send_telegram_message
-
 from django.shortcuts import redirect
 from django.utils import timezone
 from datetime import timedelta
@@ -291,16 +329,40 @@ from .models import BookIssue, Reader, Book
 
 from books.utils import send_telegram_message  # если send_telegram_message в utils.py
 
+from django.views.decorators.csrf import csrf_protect
+from django.shortcuts import redirect
+from django.utils import timezone
+from datetime import timedelta
+from .models import BookIssue, Reader, Book
+from books.utils import send_telegram_message
+
+@csrf_protect
 def add_book_issue(request):
     if request.method == 'POST':
-        telegram = request.POST.get('telegram_username')
-        book_title = request.POST.get('book_title')
-        staff = request.POST.get('issued_by')
+        telegram = request.POST.get('telegram_username', '').strip()
+        full_name = request.POST.get('full_name', '').strip()
+        book_title = request.POST.get('book_title', '').strip()
+        staff = request.POST.get('issued_by', '').strip()
 
         try:
-            reader = Reader.objects.get(telegram_username=telegram)
+            # Ищем всех по имени
+            matching_readers = Reader.objects.filter(full_name=full_name)
+
+            if telegram:
+                # Если указан Telegram — ищем по имени + логину
+                reader = matching_readers.filter(telegram_username=telegram).first()
+            else:
+                # Если логин не указан — берём того, у кого логина нет
+                reader = matching_readers.filter(telegram_username__isnull=True).first()
+
+            if not reader:
+                # Если не удалось найти нужного — возвращаемся
+                return redirect('book_issue')
+
+            # Поиск книги
             book = Book.objects.get(title=book_title)
 
+            # Создаём запись
             issue = BookIssue.objects.create(
                 reader=reader,
                 book=book,
@@ -309,6 +371,7 @@ def add_book_issue(request):
                 return_date=timezone.now().date() + timedelta(days=14)
             )
 
+            # Уведомляем, если есть chat_id
             if reader.chat_id:
                 send_telegram_message(
                     reader.chat_id,
@@ -317,10 +380,14 @@ def add_book_issue(request):
                     f"Дата возврата: {issue.return_date}"
                 )
 
-        except (Reader.DoesNotExist, Book.DoesNotExist):
+        except Book.DoesNotExist:
+            # Можно отобразить сообщение
             pass
 
     return redirect('book_issue')
+
+
+
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from books.models import Reader
@@ -374,6 +441,194 @@ def delete_issue(request, pk):
 
     return redirect('book_issue')
 
+from django.utils import timezone
+from django.shortcuts import render
+from .models import BookIssue
 
+#таблица должников
+from django.utils import timezone
+
+def ajax_overdue_search(request):
+    query = request.GET.get('q', '')
+    today = timezone.now().date()
+    overdue_issues = BookIssue.objects.filter(
+        return_date__lt=today,
+        reader__full_name__icontains=query
+    ).select_related('reader', 'book')
+    html = render_to_string('books/partials/overdue_rows.html', {'overdue_issues': overdue_issues})
+    return JsonResponse({'html': html})
+from django.template.loader import render_to_string
+from django.http import JsonResponse
+
+def overdue_issues_partial(request):
+    today = timezone.now().date()
+    overdue_issues = BookIssue.objects.filter(return_date__lt=today)
+
+    html = render_to_string('books/partials/overdue_rows.html', {
+        'overdue_issues': overdue_issues
+    }, request=request)
+
+    return JsonResponse({'html': html})
+#отзывы
+from django.http import JsonResponse
+from .models import BookFeedback
+
+def get_feedback(request, book_id):
+    reader_id = request.session.get('reader_id')
+    feedback = BookFeedback.objects.filter(reader_id=reader_id, book_id=book_id).first()
+    return JsonResponse({
+        'like': feedback.is_like if feedback else None,
+        'comment': feedback.comment if feedback else ''
+    })
+from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import get_object_or_404
+
+@csrf_exempt
+def submit_feedback(request):
+    if request.method == 'POST':
+        reader_id = request.session.get('reader_id')
+        book_id = request.POST.get('book_id')
+        is_like = request.POST.get('is_like')  # 'like' / 'dislike' / ''
+        comment = request.POST.get('comment', '')
+
+        if reader_id and book_id:
+            feedback, _ = BookFeedback.objects.update_or_create(
+                reader_id=reader_id,
+                book_id=book_id,
+                defaults={
+                    'is_like': True if is_like == 'like' else False if is_like == 'dislike' else None,
+                    'comment': comment
+                }
+            )
+            return JsonResponse({'status': 'ok'})
+    return JsonResponse({'status': 'error'}, status=400)
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse
+from .models import Book
+
+@require_POST
+def book_reaction(request):
+    book_id = request.POST.get('book_id')
+    reaction_type = request.POST.get('type')
+    reader_id = request.session.get('reader_id')
+
+    if not (book_id and reaction_type and reader_id):
+        return JsonResponse({'error': 'Неверные данные'}, status=400)
+
+    try:
+        feedback, created = BookFeedback.objects.get_or_create(
+            book_id=book_id,
+            reader_id=reader_id,
+            defaults={'is_like': True if reaction_type == 'like' else False if reaction_type == 'dislike' else None}
+        )
+        if not created:
+            feedback.is_like = True if reaction_type == 'like' else False if reaction_type == 'dislike' else None
+            feedback.save()
+
+        return JsonResponse({'status': 'ok'})
+    except:
+        return JsonResponse({'status': 'error'}, status=400)
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse
+
+from .models import Book, Reader, BookIssue, BookFeedback
+
+@csrf_exempt
+def submit_review(request):
+    if request.method == 'POST':
+        book_id = request.POST.get('book_id')
+        review_text = request.POST.get('review')
+        reader_id = request.session.get('reader_id')
+
+        if not (reader_id and book_id and review_text):
+            return JsonResponse({'error': 'Недостаточно данных'}, status=400)
+
+        try:
+            book = Book.objects.get(id=book_id)
+            reader = Reader.objects.get(id=reader_id)
+
+            feedback, created = BookFeedback.objects.get_or_create(
+                book=book, reader=reader,
+                defaults={'comment': review_text}
+            )
+            if not created:
+                feedback.comment = review_text
+                feedback.save()
+
+            return JsonResponse({'success': True})
+        except (Book.DoesNotExist, Reader.DoesNotExist):
+            return JsonResponse({'error': 'Книга или читатель не найдены'}, status=404)
+
+    return JsonResponse({'error': 'Неверный метод'}, status=405)
+from django.http import JsonResponse
+from .models import BookFeedback, Book
+
+def get_book_reviews(request, book_id):
+    feedbacks = BookFeedback.objects.filter(
+        book_id=book_id,
+        comment__isnull=False
+    ).exclude(comment='').select_related('reader')
+
+    data = [{
+        'reader': fb.reader.full_name,
+        'comment': fb.comment
+    } for fb in feedbacks]
+
+    return JsonResponse({'reviews': data})
+#статистика
+from django.db.models import Count, Q
+from .models import Book, BookFeedback, BookIssue
+
+
+
+@require_POST
+def delete_feedback(request, feedback_id):
+    BookFeedback.objects.filter(id=feedback_id).delete()
+    return redirect('statistics')
+
+
+from django.db.models import Count, Q
+from .models import Book, BookFeedback, BookIssue
+
+from django.shortcuts import render
+from django.utils import timezone
+from django.db.models import Count, Q
+from .models import Book, BookIssue, BookFeedback, Reader
+
+def statistics_view(request):
+    total_books = Book.objects.count()
+    total_readers = Reader.objects.count()  # 👈 добавлено
+    issued_books = BookIssue.objects.filter(return_date__gte=timezone.now().date()).count()
+    overdue_books = BookIssue.objects.filter(return_date__lt=timezone.now().date()).count()
+
+    popular_books = Book.objects.annotate(
+        likes=Count('bookfeedback', filter=Q(bookfeedback__is_like=True))
+    ).order_by('-likes')[:5]
+
+    unpopular_books = Book.objects.annotate(
+        dislikes=Count('bookfeedback', filter=Q(bookfeedback__is_like=False))
+    ).order_by('-dislikes')[:5]
+
+    all_feedback = BookFeedback.objects.select_related('book', 'reader').exclude(comment="")
+
+    return render(request, 'books/statistics.html', {
+        'total_books': total_books,
+        'total_readers': total_readers,  # 👈 передаём в шаблон
+        'issued_books': issued_books,
+        'overdue_books': overdue_books,
+        'popular_books': popular_books,
+        'unpopular_books': unpopular_books,
+        'all_feedback': all_feedback
+    })
+
+from django.views.decorators.http import require_POST
+from django.shortcuts import redirect
+from .models import BookFeedback
+
+@require_POST
+def delete_all_feedback(request):
+    # Удаляем только комментарии, оставляя лайки/дизлайки
+    BookFeedback.objects.exclude(comment='').update(comment='')
+    return redirect('statistics')
 
 

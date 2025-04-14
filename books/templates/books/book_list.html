@@ -14,7 +14,7 @@
         <a href="{% url 'book_list' %}" class="header-title">УПРАВЛЕНИЕ КНИЖНЫМ ФОНДОМ</a>
         <a href="{% url 'book_issue' %}" class="header-link">ВЫДАЧА КНИГ</a>
         <a href="{% url 'readers_list' %}" class="header-link">ЧИТАТЕЛИ</a>
-        <a href="#" class="header-link">СТАТИСТИКА</a>
+        <a href="{% url 'statistics' %}" class="header-link">СТАТИСТИКА</a>
         <a href="{% url 'staff_login' %}" class="header-link">ВЫХОД</a>
     </div>
     <div class="header-right">
@@ -65,9 +65,9 @@
             {% csrf_token %}
             <p><input type="text" name="title" placeholder="Название книги" required></p>
             <p><input type="text" name="author" placeholder="Автор" required></p>
-            <p><input type="text" name="publisher" placeholder="Издательство"></p>
-            <p><input type="number" name="year" placeholder="Год написания"></p>
-            <p><input type="text" name="location" placeholder="Размещение"></p>
+            <p><input type="text" name="publisher" placeholder="Издательство (необязательно)"></p>
+            <p><input type="number" name="year" placeholder="Год написания (необязательно)"></p>
+            <p><input type="text" name="location" placeholder="Размещение (необязательн)"></p>
             <p><input type="file" name="cover_image"></p>
             <p><input type="number" name="quantity" placeholder="Количество" min="1"></p>
             <input type="hidden" name="cover_auto">

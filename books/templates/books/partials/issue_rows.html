@@ -1,5 +1,6 @@
 {% for issue in issues %}
 <tr>
+    <td>{{ forloop.counter }}</td>
     <td>{{ issue.reader.telegram_username }}</td>
     <td>{{ issue.reader.full_name }}</td>
     <td>{{ issue.book.title }}</td>
@@ -9,7 +10,7 @@
     <td>
         <form method="post" action="{% url 'delete_issue' issue.pk %}">
             {% csrf_token %}
-            <button type="submit" class="delete-button">Удалить</button>
+            <button type="submit" class="delete-button">Да</button>
         </form>
     </td>
 </tr>
