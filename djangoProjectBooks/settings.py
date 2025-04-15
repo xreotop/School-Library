@@ -141,3 +141,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 LANGUAGE_CODE = 'ru'
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', 'YOUR_DEFAULT_BOT_TOKEN')
+from decouple import config
+
+STAFF_PIN = config('STAFF_PIN')  # Добавь default, чтобы исключить None
+

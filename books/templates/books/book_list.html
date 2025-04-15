@@ -63,13 +63,19 @@
         <h2>Добавить книгу</h2>
         <form id="add-book-form" enctype="multipart/form-data">
             {% csrf_token %}
-            <p><input type="text" name="title" placeholder="Название книги" required></p>
-            <p><input type="text" name="author" placeholder="Автор" required></p>
-            <p><input type="text" name="publisher" placeholder="Издательство (необязательно)"></p>
-            <p><input type="number" name="year" placeholder="Год написания (необязательно)"></p>
-            <p><input type="text" name="location" placeholder="Размещение (необязательн)"></p>
-            <p><input type="file" name="cover_image"></p>
-            <p><input type="number" name="quantity" placeholder="Количество" min="1"></p>
+            <p><input type="text" name="title" placeholder="Название книги" required style="width: 100%; height: 40px; font-size: 16px;"></p>
+            
+            <p>
+                <input type="text" name="author" placeholder="Автор" required id="author-input" style="width: 100%; height: 40px; font-size: 16px;">
+                <div id="author-suggestions" style="margin-top: 5px;"></div>
+            </p>
+        
+            <p><input type="text" name="publisher" placeholder="Издательство (необязательно)" style="width: 100%; height: 40px;"></p>
+            <p><input type="number" name="year" placeholder="Год написания (необязательно)" style="width: 100%; height: 40px;"></p>
+            <p><input type="text" name="location" placeholder="Размещение (необязательное)" style="width: 100%; height: 40px;"></p>
+            <p><input type="file" name="cover_image" style="width: 100%;"></p>
+            <p><input type="number" name="quantity" placeholder="Количество" min="1" style="width: 100%; height: 40px;"></p>
+        
             <input type="hidden" name="cover_auto">
             <div id="cover-preview" style="margin: 10px 0;"></div>
             <div id="form-errors" style="color: red; font-size: 14px;"></div>
@@ -117,35 +123,51 @@ $(function () {
     window.onclick = (e) => { if (e.target === document.getElementById('modal')) $('#modal').hide(); };
 
     $('input[name="title"]').on('blur', function () {
-        const title = $(this).val().trim();
-        if (!title) return;
+    const title = $(this).val().trim();
+    if (!title) return;
 
-        $.get('/books/fetch-cover/', { title: title }, function (data) {
-            if (data.image_urls) {
-                let previewHTML = '<div class="cover-scroll">';
-                data.image_urls.forEach(url => {
-                    previewHTML += `<img src="${url}" class="cover-option">`;
-                });
-                previewHTML += '</div>';
-                $('#cover-preview').html(previewHTML);
+    $.get('/books/fetch-cover/', { title: title }, function (data) {
+        // Обложки
+        if (data.image_urls) {
+            let previewHTML = '<div class="cover-scroll">';
+            data.image_urls.forEach(url => {
+                previewHTML += `<img src="${url}" class="cover-option" style="margin: 5px; width: 80px;">`;
+            });
+            previewHTML += '</div>';
+            $('#cover-preview').html(previewHTML);
 
-                $('.cover-option').on('click', function () {
-                    $('.cover-option').removeClass('selected');
-                    $(this).addClass('selected');
-                    $('input[name="cover_auto"]').val($(this).attr('src'));
-                });
-            }
+            $('.cover-option').on('click', function () {
+                $('.cover-option').removeClass('selected');
+                $(this).addClass('selected');
+                $('input[name="cover_auto"]').val($(this).attr('src'));
+            });
+        }
 
-            if (data.author) {
-                $('input[name="author"]').val(data.author);
-            }
-           
-        });
+        // Авторы
+        if (data.authors && data.authors.length > 0) {
+            let authorsHTML = '<div style="background:#f2f2f2; border:1px solid #ccc; padding: 5px;">';
+            data.authors.forEach(author => {
+                authorsHTML += `<div class="author-option" style="cursor:pointer; padding:4px 6px;">${author}</div>`;
+            });
+            authorsHTML += '</div>';
+            $('#author-suggestions').html(authorsHTML);
+
+            $('.author-option').on('click', function () {
+                $('#author-input').val($(this).text());
+                $('#author-suggestions').empty();
+            });
+        }
+    });
     });
 
     $('#add-book-form').on('submit', function (e) {
         e.preventDefault();
+    
         const formData = new FormData(this);
+        const $button = $(this).find('button[type="submit"]');
+    
+        $button.prop('disabled', true).text('Сохранение...');
+    
         $.ajax({
             url: "{% url 'add_book' %}",
             type: "POST",
@@ -172,6 +194,11 @@ $(function () {
                 } else {
                     alert("Ошибка при добавлении книги.");
                 }
+            },
+            complete: function () {
+                setTimeout(function () {
+                    $button.prop('disabled', false).text('Сохранить');
+                }, 2000);
             }
         });
     });

@@ -10,6 +10,8 @@ urlpatterns = [
     path('autocomplete/', views.autocomplete, name='autocomplete'),
     path('ajax-book-list/', views.ajax_book_list, name='ajax_book_list'),
     path('staff-login/', views.staff_login_view, name='staff_login'),  # 👈 новый маршрут
+    path('verify-pin/', views.verify_pin, name='verify_pin'),
+
     path('login/', views.login_choice, name='login_choice'),           # 👈 главная страница
     path('fetch-cover/', views.fetch_cover, name='fetch_cover'),
     path('ajax-reader-search/', views.ajax_reader_search, name='ajax_reader_search'),

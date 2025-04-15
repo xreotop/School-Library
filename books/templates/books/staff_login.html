@@ -50,7 +50,7 @@
 <body>
 <div class="login-box">
     <h2>Вход в систему для сотрудника</h2>
-    <form method="POST">
+    <form method="POST" action="{% url 'verify_pin' %}">
         {% csrf_token %}
         <input type="password" name="pin" id="pin-input" placeholder="Введите пин-код"><br>
         <div class="checkbox-container">

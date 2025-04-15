@@ -29,21 +29,20 @@ from urllib.parse import urlparse
 from django.core.files.base import ContentFile
 import requests
 
+from django.shortcuts import redirect
+
 def add_book(request):
     if request.method == 'POST':
         form = BookForm(request.POST, request.FILES)
         if form.is_valid():
             book = form.save(commit=False)
 
-            # Автозагрузка обложки, если файл не загружен вручную
             cover_url = request.POST.get('cover_auto')
             if cover_url and not request.FILES.get('cover_image'):
                 try:
                     response = requests.get(cover_url)
                     if response.status_code == 200:
-                        ext = os.path.splitext(urlparse(cover_url).path)[-1]
-                        if not ext:
-                            ext = '.jpg'  # по умолчанию
+                        ext = os.path.splitext(urlparse(cover_url).path)[-1] or '.jpg'
                         filename = f"auto_cover_{book.title[:10].replace(' ', '_')}{ext}"
                         book.cover_image.save(filename, ContentFile(response.content), save=False)
                 except Exception as e:
@@ -52,7 +51,8 @@ def add_book(request):
             book.save()
             return JsonResponse({'success': True})
         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
-    return JsonResponse({'success': False}, status=405)
+    return redirect('book_list')
+
 
 
 
@@ -104,15 +104,19 @@ def login_choice(request):
 
 def staff_login(request):
     return render(request, 'books/staff_login.html')
+import os
+from django.conf import settings
 
 def verify_pin(request):
     if request.method == 'POST':
         pin = request.POST.get('pin')
-        if pin == 'admin1001':
+        if pin == settings.STAFF_PIN:
             return redirect('book_list')
         else:
             return render(request, 'books/staff_login.html', {'error': 'Неверный пин-код'})
     return redirect('staff_login')
+
+
 from django.shortcuts import render, redirect
 
 def staff_login_view(request):
@@ -130,7 +134,7 @@ import requests
 def fetch_cover(request):
     title = request.GET.get('title', '')
     if not title:
-        return JsonResponse({'image_urls': [], 'author': ''})
+        return JsonResponse({'image_urls': [], 'authors': []})
 
     try:
         response = requests.get(
@@ -141,14 +145,12 @@ def fetch_cover(request):
         data = response.json()
         items = data.get('items', [])
         image_urls = []
-        author = ''
+        authors_set = set()
 
         for item in items:
             volume_info = item.get('volumeInfo', {})
-            if not author:
-                authors = volume_info.get('authors')
-                if authors:
-                    author = authors[0]
+            for author in volume_info.get('authors', []):
+                authors_set.add(author)
             image_links = volume_info.get('imageLinks', {})
             for key in ['thumbnail', 'smallThumbnail']:
                 url = image_links.get(key)
@@ -157,11 +159,15 @@ def fetch_cover(request):
                         url = url.replace('http://', 'https://')
                     image_urls.append(url)
 
-        return JsonResponse({'image_urls': image_urls, 'author': author})
+        return JsonResponse({
+            'image_urls': image_urls,
+            'authors': list(authors_set)
+        })
     except Exception as e:
         print("Ошибка при получении обложек:", e)
 
-    return JsonResponse({'image_urls': [], 'author': ''})
+    return JsonResponse({'image_urls': [], 'authors': []})
+
 from .models import Reader
 
 #читатели список
@@ -321,10 +327,7 @@ def book_issue_view(request):
         'books': books
     })
 
-from django.shortcuts import redirect
-from django.utils import timezone
-from datetime import timedelta
-from .models import BookIssue, Reader, Book
+
 
 
 from books.utils import send_telegram_message  # если send_telegram_message в utils.py
