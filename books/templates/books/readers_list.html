@@ -7,53 +7,51 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        
-        #search-reader {
-            margin-top: 20px;
-            margin-bottom: 20px;
-            width: 100%;
-            max-width: 500px;
-            padding: 10px;
-            font-size: 16px;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1001;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.4);
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            width: 600px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-        .close-modal {
-            float: right;
-            font-size: 20px;
-            cursor: pointer;
-            color: red;
-        }
-        .readers-table th:first-child,
-        .readers-table td:first-child {
-            width: 50px;
-            text-align: center;
-        }
-        th:nth-child(4), td:nth-child(4) {
-            width: 150px;
-            min-width: 150px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-
-       #openAddReaderModal {
+    #search-reader {
+        margin-top: 20px;
+        margin-bottom: 20px;
+        width: 100%;
+        max-width: 500px;
+        padding: 10px;
+        font-size: 16px;
+    }
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1001;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background-color: rgba(0, 0, 0, 0.4);
+        justify-content: center;
+        align-items: center;
+    }
+    .modal-content {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        width: 700px;
+        max-width: 90%;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    .close-modal {
+        float: right;
+        font-size: 20px;
+        cursor: pointer;
+        color: red;
+    }
+    .readers-table th:first-child,
+    .readers-table td:first-child {
+        width: 50px;
+        text-align: center;
+    }
+    th:nth-child(5), td:nth-child(5) {
+        width: 150px;
+        min-width: 150px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    #openAddReaderModal {
         background-color: #4CAF50;
         color: white;
         font-weight: bold;
@@ -62,43 +60,119 @@
         border-radius: 6px;
         text-decoration: none;
         transition: 0.2s;
-        }
-    
-        #openAddReaderModal:hover {
-            background-color: #388e3c;
-            color: white;
-        }
-
+    }
+    #openAddReaderModal:hover {
+        background-color: #388e3c;
+        color: white;
+    }
+    .form-row {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    .form-row input {
+        flex: 1;
+        padding: 10px;
+    }
+    input[type="text"],
+    input[type="number"],
+    input[type="password"] {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+        overflow-wrap: break-word;
+    }
+    input::placeholder {
+        font-size: 14px;
+        overflow-wrap: break-word;
+        line-height: 1.2;
+    }
+    .edit-button {
+        background-color: #2196F3;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 5px;
+    }
+    .edit-button:hover {
+        background-color: #1976D2;
+    }
+    .info-button {
+        background-color: #2196F3;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-left: 5px;
+    }
+    .info-button:hover {
+        background-color: #1976D2;
+    }
+    #readerIssuesContent table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    #readerIssuesContent th, #readerIssuesContent td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+    #readerIssuesContent th {
+        background-color: #f2f2f2;
+    }
+    .notification {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 4px;
+        display: none;
+    }
+    .notification.success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    .notification.error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
     </style>
 </head>
 <body>
-
 <div class="header-bar">
     <div class="header-nav">
         <a href="{% url 'book_list' %}" class="header-title">УПРАВЛЕНИЕ КНИЖНЫМ ФОНДОМ</a>
         <a href="{% url 'book_issue' %}" class="header-link">ВЫДАЧА КНИГ</a>
         <a href="{% url 'readers_list' %}" class="header-link">ЧИТАТЕЛИ</a>
         <a href="{% url 'statistics' %}" class="header-link">СТАТИСТИКА</a>
-        <a href="{% url 'staff_login' %}" class="header-link">ВЫХОД</a>
+        <a href="{% url 'staff_logout' %}" class="header-link">ВЫХОД</a>
     </div>
 </div>
-
 <div class="content">
     <h2>Зарегистрированные читатели</h2>
     <div style="display: flex; justify-content: flex-start; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
         <input type="text" id="search-reader" placeholder="Поиск по имени и фамилии..." style="flex: 1; max-width: 400px; padding: 10px; font-size: 16px;">
         <button id="openAddReaderModal">➕ Добавить нового читателя</button>
     </div>
-
-
-
     <table class="readers-table">
         <thead>
             <tr>
-                <th>№</th>
-                <th>Имя и фамилия</th>
+                <th>Номер</th>
+                <th>Год регистрации</th>
+                <th>Фамилия</th>
+                <th>Имя</th>
+                <th>Отчество</th>
+                <th>Год рождения</th>
+                <th>Адрес</th>
+                <th>Телефон</th>
+                <th>Класс</th>
                 <th>Telegram</th>
-                <th>Удалить из системы</th>
+                <th>Действия</th>
             </tr>
         </thead>
         <tbody id="readers-body">
@@ -106,24 +180,79 @@
         </tbody>
     </table>
 </div>
+<!-- Модальное окно для добавления читателя -->
 <div id="addReaderModal" class="modal">
-    <div class="modal-content" > 
-        <span id="closeAddReaderModal" class="close-modal">&times;</span>
+    <div class="modal-content">
+        <span id="closeAddReaderModal" class="close-modal">×</span>
         <h3>Добавление нового читателя</h3>
-        <form method="POST" action="{% url 'add_reader' %}">
+        <form method="POST" action="{% url 'add_reader' %}" id="addReaderForm">
             {% csrf_token %}
-            <input type="text" name="full_name" placeholder="Имя и фамилия" required style="width: 350px; padding: 10px; margin-bottom: 10px;">
-            <input type="text" name="telegram_username" placeholder="Логин Telegram должен начинаться с @ (необязательно)" style="width: 350px; padding: 10px; margin-bottom: 10px;">
-            <input type="password" id="passwordField" name="password" placeholder="Пароль (необязательно)" style="width: 350px; padding: 10px; margin-bottom: 10px;">
-            <label><input type="checkbox" onclick="togglePasswordVisibility()"> Показать пароль</label>
+            <div class="form-row">
+                <input type="number" name="registration_year" placeholder="Год регистрации" required>
+            </div>
+            <div class="form-row">
+                <input type="text" name="last_name" placeholder="Фамилия" required>
+                <input type="text" name="first_name" placeholder="Имя" required>
+            </div>
+            <div class="form-row">
+                <input type="text" name="middle_name" placeholder="Отчество (необязательно)">
+                <input type="number" name="birth_year" placeholder="Год рождения (необязательно)">
+            </div>
+            <input type="text" name="address" placeholder="Домашний адрес (необязательное)" style="width: 100%; padding: 10px; margin-bottom: 10px;">
+            <div class="form-row">
+                <input type="text" name="phone" placeholder="Телефон (необязательное)">
+                <input type="text" name="school_class" placeholder="Класс" required>
+            </div>
+            <input type="text" name="telegram_username" placeholder="Логин Telegram должен начинаться с @ (необязательно)" style="width: 100%; padding: 10px; margin-bottom: 10px;">
+            <input type="password" id="passwordField" name="password" placeholder="Пароль (необязательно)" style="width: 100%; padding: 10px; margin-bottom: 10px;">
+            <label><input type="checkbox" onclick="togglePasswordVisibility('passwordField')"> Показать пароль</label>
             <button type="submit" style="padding: 10px 20px;">Добавить</button>
+            <div id="addReaderNotification" class="notification"></div> <!-- Добавлен элемент уведомления -->
         </form>
     </div>
 </div>
-
-
-
-
+<!-- Модальное окно для редактирования читателя -->
+<div id="editReaderModal" class="modal">
+    <div class="modal-content">
+        <span id="closeEditReaderModal" class="close-modal">×</span>
+        <h3>Редактирование читателя</h3>
+        <form method="POST" action="{% url 'edit_reader' 0 %}" id="editReaderForm">
+            {% csrf_token %}
+            <input type="hidden" name="reader_id" id="editReaderId">
+            <div class="form-row">
+                <input type="number" name="registration_year" id="editRegistrationYear" placeholder="Год регистрации" required>
+            </div>
+            <div class="form-row">
+                <input type="text" name="last_name" id="editLastName" placeholder="Фамилия" required>
+                <input type="text" name="first_name" id="editFirstName" placeholder="Имя" required>
+            </div>
+            <div class="form-row">
+                <input type="text" name="middle_name" id="editMiddleName" placeholder="Отчество (необязательно)">
+                <input type="number" name="birth_year" id="editBirthYear" placeholder="Год рождения (необязательно)">
+            </div>
+            <input type="text" name="address" id="editAddress" placeholder="Адрес (необязательно)" style="width: 100%; padding: 10px; margin-bottom: 10px;">
+            <div class="form-row">
+                <input type="text" name="phone" id="editPhone" placeholder="Телефон (необязательное)">
+                <input type="text" name="school_class" id="editSchoolClass" placeholder="Класс" required>
+            </div>
+            <input type="text" name="telegram_username" id="editTelegramUsername" placeholder="Telegram (начинается с @, необязательно)" style="width: 100%; padding: 10px; margin-bottom: 10px;">
+            <input type="password" id="editPasswordField" name="password" placeholder="Пароль (необязательно)" style="width: 100%; padding: 10px; margin-bottom: 10px;">
+            <label><input type="checkbox" onclick="togglePasswordVisibility('editPasswordField')"> Показать пароль</label>
+            <div id="editReaderNotification" class="notification"></div>
+            <button type="submit" style="padding: 10px 20px;">Сохранить</button>
+        </form>
+    </div>
+</div>
+<!-- Модальное окно для информации о выданных книгах -->
+<div id="readerIssuesModal" class="modal">
+    <div class="modal-content">
+        <span id="closeReaderIssuesModal" class="close-modal">×</span>
+        <h3>Выданные книги</h3>
+        <div id="readerIssuesContent">
+            <p>Загрузка данных...</p>
+        </div>
+    </div>
+</div>
 <footer class="site-footer">
     <div class="footer-content">
         <p>Made by Andrey Kovalev, Vladivostok, Russia</p>
@@ -132,9 +261,33 @@
         </a>
     </div>
 </footer>
-
-
 <script>
+    // Настройка CSRF-токена для AJAX
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+    
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+            xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest"); // Указываем, что это AJAX
+        }
+    });
+
     $(function () {
         $('#search-reader').on('input', function () {
             const query = $(this).val();
@@ -142,30 +295,222 @@
                 $('#readers-body').html(data.html);
             });
         });
+
+        // Модалка добавления читателя
+        const addModal = document.getElementById("addReaderModal");
+        document.getElementById("openAddReaderModal").onclick = () => openAddReaderModal();
+        document.getElementById("closeAddReaderModal").onclick = () => addModal.style.display = "none";
+
+        // Модалка редактирования читателя
+        const editModal = document.getElementById("editReaderModal");
+        const editForm = document.getElementById("editReaderForm");
+        document.getElementById("closeEditReaderModal").onclick = () => editModal.style.display = "none";
+
+        // Модалка информации о выданных книгах
+        const issuesModal = document.getElementById("readerIssuesModal");
+        document.getElementById("closeReaderIssuesModal").onclick = () => issuesModal.style.display = "none";
+
+        window.onclick = (e) => {
+            if (e.target === addModal) addModal.style.display = "none";
+            if (e.target === editModal) editModal.style.display = "none";
+            if (e.target === issuesModal) issuesModal.style.display = "none";
+        };
+
+        // AJAX для формы редактирования
+        $('#editReaderForm').on('submit', function (e) {
+            e.preventDefault();
+            const $form = $(this);
+            const $button = $form.find('button[type="submit"]');
+            const notification = document.getElementById("editReaderNotification");
+            $button.prop('disabled', true).text('Сохранение...');
+            console.log('Sending AJAX request to:', $form.attr('action'));
+            console.log('Form data:', $form.serialize());
+            $.post({
+                url: $form.attr('action'),
+                data: $form.serialize(),
+                dataType: 'json',
+                success: function (data) {
+                    console.log('Received response:', data);
+                    if (notification) {
+                        notification.style.display = 'block';
+                        if (data.success) {
+                            notification.classList.remove('error');
+                            notification.classList.add('success');
+                            notification.textContent = data.message;
+                            setTimeout(() => {
+                                editModal.style.display = "none";
+                                $.get("{% url 'ajax_reader_search' %}", { q: $('#search-reader').val() }, function (data) {
+                                    $('#readers-body').html(data.html);
+                                });
+                            }, 1000); // Задержка 1 секунда
+                        } else {
+                            notification.classList.remove('success');
+                            notification.classList.add('error');
+                            notification.textContent = data.message;
+                        }
+                    } else {
+                        alert(data.message || 'Уведомление не настроено');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('AJAX error:', status, error);
+                    console.error('Response text:', xhr.responseText);
+                    if (notification) {
+                        notification.style.display = 'block';
+                        notification.classList.remove('success');
+                        notification.classList.add('error');
+                        notification.textContent = xhr.responseJSON ? xhr.responseJSON.message : 'Произошла неизвестная ошибка';
+                    } else {
+                        alert('Ошибка: ' + (xhr.responseJSON ? xhr.responseJSON.message : 'Неизвестная ошибка'));
+                    }
+                },
+                complete: function () {
+                    $button.prop('disabled', false).text('Сохранить');
+                }
+            });
+        });
+
+        // AJAX для формы добавления
+        document.querySelector("#addReaderModal form").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const form = this;
+            const submitButton = form.querySelector("button[type='submit']");
+            const notification = document.getElementById("addReaderNotification");
+
+            console.log('Form submission triggered');
+            console.log('Form data:', $(form).serialize());
+
+            if (notification) {
+                notification.style.display = 'none';
+                notification.classList.remove('error', 'success');
+                notification.textContent = '';
+            }
+
+            submitButton.disabled = true;
+            submitButton.textContent = "Добавление...";
+
+            $.ajax({
+                url: form.action,
+                type: 'POST',
+                data: $(form).serialize(),
+                dataType: 'json',
+                success: function(data) {
+                    console.log('AJAX success:', data);
+                    if (notification) {
+                        notification.style.display = 'block';
+                        if (data.success) {
+                            notification.classList.remove('error');
+                            notification.classList.add('success');
+                            notification.textContent = data.message;
+                            form.reset();
+                            setTimeout(() => {
+                                document.getElementById("addReaderModal").style.display = "none";
+                                $.get("{% url 'ajax_reader_search' %}", { q: $('#search-reader').val() }, function(data) {
+                                    $('#readers-body').html(data.html);
+                                });
+                            }, 1000);
+                        } else {
+                            notification.classList.remove('success');
+                            notification.classList.add('error');
+                            notification.textContent = data.message;
+                        }
+                    } else {
+                        alert(data.message || 'Уведомление не настроено');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX error:', status, error, xhr.responseText);
+                    if (notification) {
+                        notification.style.display = 'block';
+                        notification.classList.remove('success');
+                        notification.classList.add('error');
+                        notification.textContent = xhr.responseJSON ? xhr.responseJSON.message : 'Произошла неизвестная ошибка';
+                    } else {
+                        alert('Ошибка: ' + (xhr.responseJSON ? xhr.responseJSON.message : 'Неизвестная ошибка'));
+                    }
+                },
+                complete: function() {
+                    submitButton.disabled = false;
+                    submitButton.textContent = "Добавить";
+                }
+            });
+        });
+
+        document.querySelector("#editReaderModal form").addEventListener("submit", function(e) {
+            const telegramInput = this.querySelector("input[name='telegram_username']");
+            const value = telegramInput.value.trim();
+            if (value && !value.startsWith('@')) {
+                e.preventDefault();
+                alert("Telegram логин должен начинаться с символа @");
+            }
+        });
     });
 
-    // Модалка добавления читателя
-    const modal = document.getElementById("addReaderModal");
-    document.getElementById("openAddReaderModal").onclick = () => modal.style.display = "flex";
-    document.getElementById("closeAddReaderModal").onclick = () => modal.style.display = "none";
-    window.onclick = (e) => { if (e.target === modal) modal.style.display = "none"; };
-
-    function togglePasswordVisibility() {
-        const field = document.getElementById("passwordField");
-        field.type = field.type === "password" ? "text" : "password";
+    // Глобальные функции
+    function openAddReaderModal() {
+        const addModal = document.getElementById("addReaderModal");
+        if (addModal) {
+            addModal.style.display = "flex";
+            const form = document.getElementById("addReaderForm");
+            if (form) form.reset();
+        } else console.error('Add modal not found');
     }
 
-    //  Проверка логина Telegram
-    document.querySelector("#addReaderModal form").addEventListener("submit", function(e) {
-        const telegramInput = this.querySelector("input[name='telegram_username']");
-        const value = telegramInput.value.trim();
-        if (value && !value.startsWith('@')) {
-            e.preventDefault();
-            alert("Telegram логин должен начинаться с символа @");
+    function openEditModal(id, registration_year, last_name, first_name, middle_name, birth_year, address, phone, school_class, telegram_username) {
+        console.log('Opening edit modal for reader:', id);
+        const editModal = document.getElementById("editReaderModal");
+        const editForm = document.getElementById("editReaderForm");
+        if (!editModal || !editForm) {
+            console.error('Edit modal or form not found');
+            return;
         }
+    
+        document.getElementById("editReaderId").value = id;
+        document.getElementById("editRegistrationYear").value = registration_year;
+        document.getElementById("editLastName").value = last_name;
+        document.getElementById("editFirstName").value = first_name;
+        document.getElementById("editMiddleName").value = middle_name || "";
+        document.getElementById("editBirthYear").value = birth_year || "";
+        document.getElementById("editAddress").value = address || "";
+        document.getElementById("editPhone").value = phone || "";
+        document.getElementById("editSchoolClass").value = school_class;
+        document.getElementById("editTelegramUsername").value = telegram_username || "";
+        document.getElementById("editPasswordField").value = '';
+        editForm.action = "{% url 'edit_reader' 0 %}".replace('0', id);
+        editModal.style.display = "flex";
+    }
+
+    function openReaderIssuesModal(id) {
+    $.get("{% url 'reader_issues' 0 %}".replace('0', id), function (data) {
+        if (data.success) {
+            let html = '<table><thead><tr><th>Книга</th><th>Инвентарный номер</th><th>Дата выдачи</th><th>Дата возврата</th><th>Статус</th></tr></thead><tbody>';
+            if (data.issues.length > 0) {
+                data.issues.forEach(issue => {
+                    const status = issue.is_returned ? 'Возвращена' : 'Выдана';
+                    // Показываем returned_date, если книга возвращена, иначе return_date
+                    const returnDate = issue.is_returned && issue.returned_date ? issue.returned_date : (issue.return_date || '—');
+                    html += `<tr><td>${issue.book_title || '—'}</td><td>${issue.inventory_number || '—'}</td><td>${issue.issue_date || '—'}</td><td>${returnDate}</td><td>${status}</td></tr>`;
+                });
+            } else {
+                html += '<tr><td colspan="5">Нет выданных книг.</td></tr>';
+            }
+            html += '</tbody></table>';
+            $('#readerIssuesContent').html(html);
+        } else {
+            $('#readerIssuesContent').html('<p>Ошибка загрузки данных.</p>');
+        }
+        document.getElementById("readerIssuesModal").style.display = "flex";
+    }).fail(function (xhr) {
+        console.error('Ошибка при загрузке выданных книг:', xhr.responseText);
+        $('#readerIssuesContent').html('<p>Произошла ошибка при загрузке данных.</p>');
+        document.getElementById("readerIssuesModal").style.display = "flex";
     });
+}
+
+    function togglePasswordVisibility(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (field) field.type = field.type === "password" ? "text" : "password";
+    }
 </script>
-
-
 </body>
 </html>

@@ -1,36 +1,41 @@
-<input type="text" id="search-overdue" placeholder="Поиск по имени и фамилии..." style="margin: 20px 0; padding: 10px; width: 90%; max-width: 400px;">
 <table class="book-issue-table">
     <thead>
     <tr>
         <th>№</th>
         <th>Логин Telegram</th>
-        <th>Имя и фамилия</th>
+        <th>ФИО</th>
         <th>Книга</th>
+        <th>Инвентарный номер</th>
         <th>Сотрудник</th>
         <th>Дата выдачи</th>
+        <th>Срок возврата</th>
         <th>Дата возврата</th>
-        <th>Книгу возвратили</th>
+        <th>Статус</th>
+        <th>Действия</th>
     </tr>
     </thead>
     <tbody>
     {% for issue in overdue_issues %}
-        <tr>
+        <tr data-issue-id="{{ issue.pk }}">
             <td>{{ forloop.counter }}</td>
-            <td>{{ issue.reader.telegram_username }}</td>
-            <td>{{ issue.reader.full_name }}</td>
+            <td>{{ issue.reader.telegram_username|default:"—" }}</td>
+            <td>{{ issue.reader.last_name }} {{ issue.reader.first_name }} {{ issue.reader.middle_name|default:"" }}</td>
             <td>{{ issue.book.title }}</td>
-            <td>{{ issue.issued_by|default_if_none:"-" }}</td>
+            <td>{{ issue.inventory_number|default:"—" }}</td>
+            <td>{{ issue.issued_by|default_if_none:"—" }}</td>
             <td>{{ issue.issue_date }}</td>
             <td>{{ issue.return_date }}</td>
+            <td>{{ issue.returned_date|default:"—" }}</td>
+            <td>{{ issue.is_returned|yesno:"Возвращена,Выдана" }}</td>
             <td>
-                <form method="post" action="{% url 'delete_issue' issue.pk %}">
+                <form method="post" action="{% url 'return_book_issue' issue.pk %}">
                     {% csrf_token %}
-                    <button type="submit" class="delete-button">Да</button>
+                    <button type="submit" class="return-button">Вернуть</button>
                 </form>
             </td>
         </tr>
     {% empty %}
-        <tr><td colspan="8">Нет должников 🎉</td></tr>
+        <tr><td colspan="11">Нет должников 🎉</td></tr>
     {% endfor %}
     </tbody>
 </table>

@@ -1,13 +1,26 @@
 {% for reader in readers %}
-<tr>
-    <td>{{ forloop.counter }}</td>
-    <td>{{ reader.full_name }}</td>
-    <td>{{ reader.telegram_username|default:"—" }}</td>
-    <td>
-        <form method="POST" action="{% url 'delete_reader' reader.id %}">
-            {% csrf_token %}
-            <button type="submit" style="background-color: #e53935; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Удалить</button>
-        </form>
-    </td>
-</tr>
+    <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ reader.registration_year }}</td>
+        <td>{{ reader.last_name }}</td>
+        <td>{{ reader.first_name }}</td>
+        <td>{{ reader.middle_name|default:"—" }}</td>
+        <td>{{ reader.birth_year|default:"—" }}</td>
+        <td>{{ reader.address|default:"—" }}</td>
+        <td>{{ reader.phone|default:"—" }}</td>
+        <td>{{ reader.school_class }}</td>
+        <td>{{ reader.telegram_username|default:"—" }}</td>
+        <td>
+            <button class="edit-button" onclick="openEditModal('{{ reader.id }}', '{{ reader.registration_year|escapejs }}', '{{ reader.last_name|escapejs }}', '{{ reader.first_name|escapejs }}', '{{ reader.middle_name|default:""|escapejs }}', '{{ reader.birth_year|default:""|escapejs }}', '{{ reader.address|default:""|escapejs }}', '{{ reader.phone|default:""|escapejs }}', '{{ reader.school_class|escapejs }}', '{{ reader.telegram_username|default:""|escapejs }}')">Редактировать</button>
+            <form method="POST" action="{% url 'delete_reader' reader.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" style="background-color: #e53935; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;" onclick="return confirm('Вы уверены, что хотите удалить читателя?');">Удалить</button>
+            </form>
+            <button class="info-button" onclick="openReaderIssuesModal('{{ reader.id }}')" style="background-color: #2196F3; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-left: 5px;">Информация</button>
+        </td>
+    </tr>
+{% empty %}
+    <tr>
+        <td colspan="11">Читатели не найдены.</td>
+    </tr>
 {% endfor %}

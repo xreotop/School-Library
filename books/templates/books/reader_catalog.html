@@ -5,7 +5,9 @@
     <meta charset="UTF-8">
     <title>Каталог книг для читателей</title>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{% static 'js/reader_catalog.js' %}" defer></script>
     <style>
         body {
             background-image: url("{% static 'images/background.jpg' %}");
@@ -13,67 +15,54 @@
             background-repeat: no-repeat;
             background-position: center;
             background-attachment: fixed;
+            margin: 0;
         }
         .header-bar {
-            background-color: #ffffff;
-            padding: 10px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            
+            background-color: #fff;
+            padding: 12px 20px;
+            border-bottom: 1px solid #ccc;
         }
-        .header-nav {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
+        
         .header-link {
+            font-weight: bold;
             text-decoration: none;
             color: black;
-            font-weight: bold;
+            font-size: 16px;
+            flex: 1;
         }
+        
+        .header-link.left {
+            text-align: left;
+        }
+        
+        .header-link.right {
+            text-align: right;
+        }
+
         .header-link:hover {
             color: #d50000;
         }
-        .telegram-header-icon {
-            width: 24px;
-            height: 24px;
-        }
-        .content {
-            flex: 1;
-            padding: 10px;
-            margin-bottom: 5px;
-        }
-        h2 {
-            margin-bottom: 20px;
-        }
+        
         .search-wrapper {
             display: flex;
             justify-content: center;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
         }
         #search-box {
             padding: 10px;
             font-size: 16px;
             width: 100%;
             max-width: 400px;
-        }
-        .book-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-        .book-card img {
-            width: 100%;
-            height: 280px;
-            object-fit: cover;
             border-radius: 5px;
+            border: 1px solid #ccc;
         }
-        .book-card p {
-            margin: 10px 0 0;
-            font-size: 14px;
+        @media (max-width: 480px) {
+            .header-link {
+                font-size: 16px;
+            }
         }
         .site-footer {
             background-color: #f1f1f1;
@@ -81,23 +70,12 @@
             text-align: center;
             font-size: 14px;
             color: #555;
-            border-top: 1px solid black;
-            border-bottom: 1px solid black;
-        }
-        .footer-content {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
+            border-top: 1px solid #ccc;
         }
         .telegram-icon {
             width: 24px;
             height: 24px;
-            transition: transform 0.2s ease;
-        }
-        .telegram-icon:hover {
-            transform: scale(1.2);
+            margin-left: 5px;
         }
         .modal {
             display: none;
@@ -107,7 +85,7 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0,0,0,0.5);
-            display: flex; /* ВАЖНО */
+            display: flex;
             justify-content: center;
             align-items: center;
         }
@@ -117,7 +95,7 @@
             padding: 20px;
             border-radius: 10px;
             width: 90%;
-            max-width: 500px;
+            max-width: 600px;
             max-height: 80vh;
             overflow-y: auto;
             position: relative;
@@ -144,24 +122,79 @@
             cursor: pointer;
             color: red;
         }
-
-
+        .personal-cabinet {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .personal-cabinet h3 {
+            margin-top: 0;
+        }
+        .personal-info, .issued-books, .returned-books {
+            margin-bottom: 20px;
+        }
+        .personal-info p {
+            margin: 5px 0;
+        }
+        .issued-books table, .returned-books table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .issued-books th, .issued-books td, .returned-books th, .returned-books td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .issued-books th, .returned-books th {
+            background-color: #f2f2f2;
+        }
+        .book-card {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .book-card img {
+            max-width: 100px;
+            margin-bottom: 10px;
+        }
+        .book-card button {
+            padding: 5px 10px;
+            margin: 2px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        .book-card button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
 
-
-<div class="header-bar">
-    <div class="header-nav">
-        <a href="{% url 'reader_catalog' %}" class="header-link">КАТАЛОГ КНИГ</a>
-        <a href="{% url 'reader_login' %}" class="header-link">Выход</a>
-    </div>
-</div>
+<header class="header-bar">
+    <a href="{% url 'reader_catalog' %}" class="header-link left">КАТАЛОГ КНИГ</a>
+    <a href="#" class="header-link right" id="openPersonalCabinet">ЛИЧНЫЙ КАБИНЕТ</a>
+    <a href="{% url 'reader_login' %}" class="header-link right">ВЫХОД</a>
+</header>
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 <div class="content">
     <div class="search-wrapper">
-        <input type="text" id="search-box" placeholder="Поиск по названию или автору...">
+        <select id="search-type" style="padding: 10px; margin-right: 10px; border-radius: 5px; border: 1px solid #ccc;">
+            <option value="title">Название</option>
+            <option value="author">Автор</option>
+            <option value="year">Год</option>
+            <option value="isbn">ISBN</option>
+        </select>
+        <input type="text" id="search-box" placeholder="Введите запрос для поиска...">
     </div>
-
     <div style="text-align: center; margin-bottom: 20px;">
         <p style="background-color: rgba(255,255,255,0.9); padding: 10px; border-radius: 8px; display: inline-block;">
             Чтобы получать уведомления о возврате книг,<br>
@@ -171,11 +204,11 @@
             </a>
         </p>
     </div>
-</div>
-<div class="book-container" id="book-container">
-    <!-- Динамически загружается через JS -->
-</div>
-
+ 
+    <div class="book-container" id="book-container">
+        <!-- Динамически загружается через JS -->
+    </div>
+</div> 
 
 <footer class="site-footer">
     <div class="footer-content">
@@ -185,10 +218,93 @@
         </a>
     </div>
 </footer>
+
+<!-- Модальное окно для личного кабинета -->
+<div id="personalCabinetModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close-modal">×</span>
+        <h3>Личный кабинет</h3>
+        <div class="personal-info">
+            <h4>Регистрационные данные</h4>
+            <p><strong>Фамилия:</strong> {{ reader.last_name }}</p>
+            <p><strong>Имя:</strong> {{ reader.first_name }}</p>
+            <p><strong>Отчество:</strong> {{ reader.middle_name|default:"—" }}</p>
+            <p><strong>Год рождения:</strong> {{ reader.birth_year|default:"—" }}</p>
+            <p><strong>Адрес:</strong> {{ reader.address|default:"—" }}</p>
+            <p><strong>Телефон:</strong> {{ reader.phone|default:"—" }}</p>
+            <p><strong>Класс:</strong> {{ reader.school_class }}</p>
+            <p><strong>Telegram:</strong> {{ reader.telegram_username|default:"—" }}</p>
+            <p><strong>Год регистрации:</strong> {{ reader.registration_year }}</p>
+        </div>
+        <div class="issued-books">
+            <h4>Выданные книги</h4>
+            {% if issued_books %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Книга</th>
+                            <th>Инвентарный номер</th>
+                            <th>Дата выдачи</th>
+                            <th>Дата возврата</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for issue in issued_books %}
+                            <tr>
+                                <td>{{ issue.book.title }}</td>
+                                <td>{{ issue.inventory_number|default:"—" }}</td>
+                                <td>{{ issue.issue_date|date:"d F Y" }}</td>
+                                <td>{{ issue.return_date|date:"d F Y" }}</td>
+                                <td>
+                                    {% if not issue.is_returned %}
+                                        Выдана
+                                    {% else %}
+                                        Возвращена
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>У вас нет выданных книг.</p>
+            {% endif %}
+        </div>
+        <div class="returned-books">
+            <h4>История прочитанных книг</h4>
+            {% if returned_books %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Книга</th>
+                            <th>Инвентарный номер</th>
+                            <th>Дата выдачи</th>
+                            <th>Дата возврата</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for issue in returned_books %}
+                            <tr>
+                                <td>{{ issue.book.title }}</td>
+                                <td>{{ issue.inventory_number|default:"—" }}</td>
+                                <td>{{ issue.issue_date|date:"d F Y" }}</td>
+                                <td>{{ issue.returned_date|default:issue.return_date|date:"d F Y" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>У вас нет возвращённых книг.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
 <!-- Модальное окно для добавления отзыва -->
 <div id="reviewModal" class="modal" style="display: none;">
     <div class="modal-content">
-        <span class="close-modal">&times;</span>
+        <span class="close-modal">×</span>
         <h3>Добавить отзыв</h3>
         <form id="reviewModalForm">
             <input type="hidden" id="modalBookId" name="book_id">
@@ -201,126 +317,13 @@
 <!-- Модальное окно для просмотра отзывов -->
 <div id="viewReviewsModal" class="modal" style="display: none;">
     <div class="modal-content">
-        <span class="close-modal">&times;</span>
+        <span class="close-modal">×</span>
         <h3>Отзывы о книге</h3>
         <div id="reviewsContent">
             <p>Загрузка...</p>
         </div>
     </div>
 </div>
-
-<script>
-    $(document).ready(function () {
-    function fetchBooks(query = '') {
-        $.ajax({
-            url: "{% url 'ajax_book_search' %}",
-            data: { 'q': query },
-            dataType: 'json',
-            success: function (data) {
-                $('#book-container').empty();
-                if (data.books.length > 0) {
-                    data.books.forEach(function (book) {
-                        const bookHtml = `
-                            <div class="book-card">
-                                ${book.cover_image ? `<img src="${book.cover_image}" alt="Обложка книги">` : ''}
-                                <p><strong>${book.title}</strong></p>
-                                <p>${book.author}</p>
-
-                                <div>
-                                    <button class="like-btn" data-id="${book.id}">👍 ${book.likes || 0}</button>
-                                    <button class="dislike-btn" data-id="${book.id}">👎 ${book.dislikes || 0}</button>
-                                </div>
-
-                                <button class="open-review-modal" data-id="${book.id}" style="margin-top: 10px;">📝 Добавить отзыв</button>
-                                <button class="open-view-reviews" data-id="${book.id}" style="margin-top: 5px;">📖 Смотреть отзывы</button>
-                            </div>`;
-                        $('#book-container').append(bookHtml);
-                    });
-                } else {
-                    $('#book-container').html('<p>Книги не найдены.</p>');
-                }
-            }
-        });
-    }
-
-    fetchBooks();
-
-    $('#search-box').on('input', function () {
-        fetchBooks($(this).val());
-    });
-
-    $(document).on('click', '.like-btn, .dislike-btn', function () {
-        const bookId = $(this).data('id');
-        const type = $(this).hasClass('like-btn') ? 'like' : 'dislike';
-
-        $.post("{% url 'book_reaction' %}", {
-            book_id: bookId,
-            type: type,
-            csrfmiddlewaretoken: '{{ csrf_token }}'
-        }, function () {
-            fetchBooks($('#search-box').val());
-        });
-    });
-
-    // открыть модалку для отзыва
-    $(document).on('click', '.open-review-modal', function () {
-        const bookId = $(this).data('id');
-        $('#modalBookId').val(bookId);
-        $('#modalReviewText').val('');
-        $('#reviewModal').fadeIn();
-    });
-
-    $('.close-modal').click(function () {
-        $('.modal').fadeOut();
-    });
-
-    $(window).click(function (e) {
-        if ($(e.target).hasClass('modal')) {
-            $('.modal').fadeOut();
-        }
-    });
-
-    // отправка отзыва
-    $('#reviewModalForm').submit(function (e) {
-        e.preventDefault();
-        const bookId = $('#modalBookId').val();
-        const review = $('#modalReviewText').val();
-
-        $.post("{% url 'submit_review' %}", {
-            book_id: bookId,
-            review: review,
-            csrfmiddlewaretoken: '{{ csrf_token }}'
-        }, function () {
-            alert('Спасибо за отзыв!');
-            $('#reviewModal').fadeOut();
-            fetchBooks($('#search-box').val());
-        });
-    });
-
-    // показать отзывы
-    $(document).on('click', '.open-view-reviews', function () {
-        const bookId = $(this).data('id');
-
-        $.get(`/books/book/${bookId}/reviews/`, function (data) {
-            let html = '';
-            if (data.reviews.length > 0) {
-                data.reviews.forEach(r => {
-                    html += `<div style="margin-bottom: 10px;">
-                                <strong>${r.reader}</strong><br>
-                                <span>${r.comment}</span>
-                             </div>`;
-                });
-            } else {
-                html = '<p>Отзывов пока нет.</p>';
-            }
-            $('#reviewsContent').html(html);
-            $('#viewReviewsModal').fadeIn();
-        });
-    });
-    });
-</script>
-
-
 
 </body>
 </html>

@@ -51,7 +51,7 @@
             width: 50px;
             text-align: center;
         }
-        #search-reader {
+        #search-reader, #search-history, #search-overdue {
             margin-top: 20px;
             margin-bottom: 20px;
             width: 100%;
@@ -59,7 +59,7 @@
             padding: 10px;
             font-size: 16px;
         }
-        .delete-button {
+        .return-button {
             background-color: #4CAF50;
             color: white;
             padding: 5px 10px;
@@ -68,8 +68,21 @@
             border-radius: 4px;
             cursor: pointer;
         }
-        .delete-button:hover {
+        .return-button:hover {
             background-color: #388e3c;
+        }
+        .clear-history-button {
+            background-color: #f44336;
+            color: white;
+            padding: 5px 10px;
+            font-size: 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .clear-history-button:hover {
+            background-color: #d32f2f;
         }
         .top-bar {
             display: flex;
@@ -103,26 +116,36 @@
         .dropdown-list div:hover {
             background-color: #eee;
         }
-
         .table-header-inline {
             display: flex;
             align-items: baseline;
-            gap: 10px;
+            gap: 20px;
             margin-top: 20px;
         }
-        
-        .overdue-inline-link {
-            font-size: 24px; /* такой же, как у h2 */
+        .table-link {
+            font-size: 24px;
             font-weight: bold;
             color: #100000;
-            text-decoration: none; /* убрать подчёркивание */
-        }
-        
-        .overdue-inline-link:hover {
             text-decoration: none;
-            opacity: 0.8; /* небольшой эффект при наведении */
         }
-
+        .table-link:hover {
+            text-decoration: none;
+            opacity: 0.8;
+        }
+        .table-link.active {
+            color: #2196F3;
+            text-decoration: underline;
+        }
+        .messages {
+            margin-bottom: 20px;
+        }
+        .alert {
+            padding: 10px;
+            background-color: #f44336;
+            color: white;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -133,19 +156,26 @@
         <a href="{% url 'book_issue' %}" class="header-link">ВЫДАЧА КНИГ</a>
         <a href="{% url 'readers_list' %}" class="header-link">ЧИТАТЕЛИ</a>
         <a href="{% url 'statistics' %}" class="header-link">СТАТИСТИКА</a>
-        <a href="{% url 'staff_login' %}" class="header-link">ВЫХОД</a>
+        <a href="{% url 'staff_logout' %}" class="header-link">ВЫХОД</a>
     </div>
 </div>
 
 <div class="content">
-
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="alert">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
     <div class="table-header-inline">
-        <h2 id="table-title">Таблица выданных книг</h2>
-        <a href="#" class="overdue-inline-link" id="toggle-overdue">Таблица должников</a>
+        <a href="{% url 'book_issue' %}" class="table-link active" id="toggle-issues">Таблица выданных книг</a>
+        <a href="{% url 'overdue_issues_partial' %}" class="table-link" id="toggle-overdue">Таблица должников</a>
+        <a href="{% url 'ajax_history' %}" class="table-link" id="toggle-history">Таблица истории выдач</a>
     </div>
 
     <div class="top-bar" id="main-controls">
-        <input type="text" id="search-reader" placeholder="Поиск по имени и фамилии...">
+        <input type="text" id="search-reader" placeholder="Поиск по ФИО...">
         <button id="openIssueModal" class="add-button">➕ Выдать книгу</button>
     </div>
 
@@ -156,57 +186,75 @@
             <tr>
                 <th>№</th>
                 <th>Логин Telegram</th>
-                <th>Имя и фамилия</th>
+                <th>ФИО</th>
                 <th>Книга</th>
+                <th>Инвентарный номер</th>
                 <th>Сотрудник</th>
                 <th>Дата выдачи</th>
+                <th>Срок возврата</th>
                 <th>Дата возврата</th>
-                <th>Подтвердить возвращение книги</th>
+                <th>Статус</th>
+                <th>Действия</th>
             </tr>
             </thead>
             <tbody id="issue-body">
-            {% for issue in issues %}
-                <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ issue.reader.telegram_username }}</td>
-                    <td>{{ issue.reader.full_name }}</td>
-                    <td>{{ issue.book.title }}</td>
-                    <td>{{ issue.issued_by }}</td>
-                    <td>{{ issue.issue_date }}</td>
-                    <td>{{ issue.return_date }}</td>
-                    <td>
-                        <form method="post" action="{% url 'delete_issue' issue.pk %}" style="margin:0">
-                            {% csrf_token %}
-                            <button type="submit" class="delete-button">Да</button>
-                        </form>
-                    </td>
-                </tr>
-            {% endfor %}
+            {% include 'books/partials/issue_rows.html' %}
             </tbody>
         </table>
     </div>
 
     <!-- Таблица с должниками -->
-    <div id="overdue-section" style="display: none;"></div>
+    <div id="overdue-section" style="display: none;">
+        <div class="top-bar">
+            <input type="text" id="search-overdue" placeholder="Поиск по ФИО...">
+        </div>
+        <div id="overdue-body"></div>
+    </div>
+
+    <!-- Таблица истории -->
+    <div id="history-section" style="display: none;">
+        <div class="top-bar">
+            <input type="text" id="search-history" placeholder="Поиск по ФИО...">
+            <button id="clear-history" class="clear-history-button">Очистить историю</button>
+        </div>
+        <table class="book-issue-table">
+            <thead>
+            <tr>
+                <th>№</th>
+                <th>Логин Telegram</th>
+                <th>ФИО</th>
+                <th>Книга</th>
+                <th>Инвентарный номер</th>
+                <th>Сотрудник</th>
+                <th>Дата выдачи</th>
+                <th>Срок возврата</th>
+                <th>Дата возврата</th>
+                <th>Статус</th>
+            </tr>
+            </thead>
+            <tbody id="history-body"></tbody>
+        </table>
+    </div>
 </div>
 
 <!-- Модальное окно -->
 <div id="issueModal" class="modal">
     <div class="modal-content">
-        <span id="closeIssueModal" class="close-modal">&times;</span>
+        <span id="closeIssueModal" class="close-modal">×</span>
         <h3>Выдать книгу</h3>
         <form method="post" action="{% url 'add_book_issue' %}">
             {% csrf_token %}
             <div>
-                <input type="text" name="full_name" id="nameField" placeholder="Имя и фамилия" required
+                <input type="text" name="reader_name" id="nameField" placeholder="ФИО" required
                        style="width: 350px; padding: 10px; margin-bottom: 10px;">
                 <span class="dropdown-btn" onclick="toggleDropdown('nameDropdown')">›</span>
                 <div class="dropdown-list" id="nameDropdown">
                     {% for reader in readers %}
-                        <div onclick="selectReader('{{ reader.full_name }}', '{{ reader.telegram_username|default_if_none:"" }}')"
-                             data-fullname="{{ reader.full_name }}"
+                        <div onclick="selectReader('{{ reader.last_name }} {{ reader.first_name }} {{ reader.middle_name|default:"" }}', '{{ reader.telegram_username|default_if_none:"" }}', '{{ reader.id }}')"
+                             data-reader-id="{{ reader.id }}"
+                             data-fullname="{{ reader.last_name }} {{ reader.first_name }} {{ reader.middle_name|default:"" }}"
                              data-telegram="{{ reader.telegram_username|default_if_none:"" }}">
-                            {{ reader.full_name }}{% if not reader.telegram_username %} (без Telegram){% else %} ({{ reader.telegram_username }}){% endif %}
+                            {{ reader.last_name }} {{ reader.first_name }} {{ reader.middle_name|default:"" }}{% if not reader.telegram_username %} (без Telegram){% else %} ({{ reader.telegram_username }}){% endif %}
                         </div>
                     {% endfor %}
                 </div>
@@ -219,7 +267,7 @@
                 <div class="dropdown-list" id="telegramDropdown">
                     {% for reader in readers %}
                         <div onclick="selectValue('telegramField', '{{ reader.telegram_username }}')">
-                            {{ reader.telegram_username }}
+                            {{ reader.telegram_username|default:"—" }}
                         </div>
                     {% endfor %}
                 </div>
@@ -231,18 +279,28 @@
                 <span class="dropdown-btn" onclick="toggleDropdown('bookDropdown')">›</span>
                 <div class="dropdown-list" id="bookDropdown">
                     {% for book in books %}
-                        <div onclick="selectValue('bookField', '{{ book.title }}')">{{ book.title }}</div>
+                        <div onclick="selectBook('{{ book.title }}', '{{ book.id }}')">{{ book.title }}</div>
                     {% endfor %}
                 </div>
             </div>
 
+            <div>
+                <input type="text" name="inventory_number" id="inventoryField" placeholder="Инвентарный номер" required
+                       style="width: 350px; padding: 10px; margin-bottom: 10px;">
+                <span class="dropdown-btn" onclick="toggleDropdown('inventoryDropdown')">›</span>
+                <div class="dropdown-list" id="inventoryDropdown">
+                    <!-- Список инвентарных номеров будет заполняться динамически -->
+                </div>
+            </div>
+
+            <input type="hidden" name="reader_id" id="readerIdField">
+            <input type="hidden" name="book_id" id="bookIdField">
             <input type="text" name="issued_by" placeholder="Сотрудник (необязательно)"
                    style="width: 350px; padding: 10px; margin-bottom: 10px;">
             <button type="submit" style="padding: 10px 20px;">Сохранить</button>
         </form>
     </div>
 </div>
-
 
 <footer class="site-footer">
     <div class="footer-content">
@@ -252,43 +310,182 @@
         </a>
     </div>
 </footer>
+
 <script>
     const modal = document.getElementById('issueModal');
     const openBtn = document.getElementById('openIssueModal');
     const closeBtn = document.getElementById('closeIssueModal');
-
+    
     openBtn.onclick = () => modal.style.display = 'flex';
     closeBtn.onclick = () => modal.style.display = 'none';
     window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
-
+    
+    function showTable(tableId) {
+        const sections = ['issue-section', 'overdue-section', 'history-section'];
+        const controls = document.getElementById('main-controls');
+        const links = document.querySelectorAll('.table-link');
+        
+        sections.forEach(section => {
+            document.getElementById(section).style.display = section === tableId ? 'block' : 'none';
+        });
+        
+        links.forEach(link => {
+            link.classList.toggle('active', link.id === `toggle-${tableId.split('-')[0]}`);
+        });
+        
+        controls.style.display = tableId === 'issue-section' ? 'flex' : 'none';
+        
+        if (tableId === 'overdue-section') {
+            $.get("{% url 'overdue_issues_partial' %}", function (data) {
+                $('#overdue-body').html(data.html);
+            });
+        } else if (tableId === 'history-section') {
+            $.get("{% url 'ajax_history' %}", function (data) {
+                $('#history-body').html(data.html);
+            });
+        }
+    }
+    
+    $('#toggle-issues').on('click', function (e) {
+        e.preventDefault();
+        showTable('issue-section');
+    });
+    
+    $('#toggle-overdue').on('click', function (e) {
+        e.preventDefault();
+        showTable('overdue-section');
+    });
+    
+    $('#toggle-history').on('click', function (e) {
+        e.preventDefault();
+        showTable('history-section');
+    });
+    
     $('#search-reader').on('input', function () {
         const query = $(this).val();
         $.get("{% url 'ajax_issue_search' %}", { q: query }, function (data) {
             $('#issue-body').html(data.html);
         });
     });
-
+    
+    $('#search-history').on('input', function () {
+        const query = $(this).val();
+        $.get("{% url 'ajax_history' %}", { q: query }, function (data) {
+            $('#history-body').html(data.html);
+        });
+    });
+    
+    $(document).on('input', '#search-overdue', function () {
+        const query = $(this).val();
+        $.get("{% url 'ajax_overdue_search' %}", { q: query }, function (data) {
+            $('#overdue-body').html(data.html);
+        });
+    });
+    
+    $(document).on('submit', '.return-button', function (e) {
+        e.preventDefault();
+        const $form = $(this).closest('form');
+        const $row = $(this).closest('tr');
+        if (!confirm('Подтвердить возврат книги?')) return;
+        $.post({
+            url: $form.attr('action'),
+            data: $form.serialize(),
+            success: function (data) {
+                if (data.success) {
+                    const issue = data.issue;
+                    const historyRow = `
+                        <tr>
+                            <td>${$('#history-body tr').length + 1}</td>
+                            <td>${issue.telegram_username}</td>
+                            <td>${issue.full_name}</td>
+                            <td>${issue.book_title}</td>
+                            <td>${issue.inventory_number}</td>
+                            <td>${issue.issued_by}</td>
+                            <td>${issue.issue_date}</td>
+                            <td>${issue.return_date}</td>
+                            <td>${issue.returned_date}</td>
+                            <td>${issue.status}</td>
+                        </tr>
+                    `;
+                    $('#history-body').prepend(historyRow);
+                    $row.remove();
+                    alert(data.message);
+                } else {
+                    alert('Ошибка: ' + (data.message || 'Не удалось вернуть книгу.'));
+                }
+            },
+            error: function (xhr) {
+                console.error('Ошибка при возврате книги:', xhr.responseText);
+                alert('Произошла ошибка при возврате книги.');
+            }
+        });
+    });
+    
+    $('#clear-history').on('click', function () {
+        if (confirm('Вы уверены, что хотите очистить историю выдач?')) {
+            $.post({
+                url: "{% url 'clear_history' %}",
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}' },
+                success: function (data) {
+                    if (data.success) {
+                        $('#history-body').html('<tr><td colspan="10">Нет записей в истории.</td></tr>');
+                        alert(data.message);
+                    } else {
+                        alert('Ошибка: ' + (data.message || 'Не удалось очистить историю.'));
+                    }
+                },
+                error: function (xhr) {
+                    console.error('Ошибка при очистке истории:', xhr.responseText);
+                    alert('Произошла ошибка при очистке истории.');
+                }
+            });
+        }
+    });
+    
     function toggleDropdown(id) {
         const dropdown = document.getElementById(id);
         dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
     }
-
+    
     function selectValue(fieldId, value) {
         document.getElementById(fieldId).value = value;
         document.querySelectorAll('.dropdown-list').forEach(el => el.style.display = 'none');
     }
-    function selectReader(fullName, telegramUsername) {
+    
+    function selectReader(fullName, telegramUsername, readerId) {
         document.getElementById("nameField").value = fullName;
         document.getElementById("telegramField").value = telegramUsername;
+        document.getElementById("readerIdField").value = readerId;
         document.querySelectorAll('.dropdown-list').forEach(el => el.style.display = 'none');
     }
-
+    
+    function selectBook(title, bookId) {
+        document.getElementById("bookField").value = title;
+        document.getElementById("bookIdField").value = bookId;
+        document.getElementById("inventoryField").value = '';
+        document.querySelectorAll('.dropdown-list').forEach(el => el.style.display = 'none');
+        $.get("{% url 'get_available_instances' %}", { book_id: bookId }, function (data) {
+            const dropdown = document.getElementById("inventoryDropdown");
+            dropdown.innerHTML = '';
+            if (data.instances.length === 0) {
+                dropdown.innerHTML = '<div>Нет доступных экземпляров</div>';
+            } else {
+                data.instances.forEach(instance => {
+                    const div = document.createElement('div');
+                    div.textContent = instance.inventory_number;
+                    div.onclick = () => selectValue('inventoryField', instance.inventory_number);
+                    dropdown.appendChild(div);
+                });
+            }
+        });
+    }
+    
     document.addEventListener("DOMContentLoaded", function () {
         function setupLiveFilter(inputId, dropdownId) {
             const input = document.getElementById(inputId);
             const dropdown = document.getElementById(dropdownId);
             const options = dropdown.querySelectorAll('div');
-
+    
             input.addEventListener('input', function () {
                 const filter = input.value.toLowerCase();
                 options.forEach(option => {
@@ -297,87 +494,52 @@
                 dropdown.style.display = 'block';
             });
         }
-
+    
         setupLiveFilter('telegramField', 'telegramDropdown');
         setupLiveFilter('bookField', 'bookDropdown');
-        setupLiveFilter('nameField', 'nameDropdown'); // 👈 добавили имя
-    });
-
-    $('#toggle-overdue').on('click', function (e) {
-    e.preventDefault();
-
-    const $overdue = $('#overdue-section');
-    const $issue = $('#issue-section');
-    const $controls = $('#main-controls');
-    const $title = $('#table-title');
-
-    if ($overdue.is(':visible')) {
-        $overdue.hide();
-        $issue.show();
-        $controls.show();
-        $(this).text('Таблица должников');
-        $title.text('Таблица выданных книг');
-    } else {
-        $.get("{% url 'overdue_issues_partial' %}", function (data) {
-            $overdue.html(data.html).show();
-            $issue.hide();
-            $controls.hide();
-            $('#toggle-overdue').text('⬅ НАЗАД');
-            $title.text('Таблица должников');
-        });
-    }
+        setupLiveFilter('nameField', 'nameDropdown');
+        setupLiveFilter('inventoryField', 'inventoryDropdown');
     });
     
-    // 🔍 Поиск среди должников в реальном времени
-    $(document).on('input', '#search-overdue', function () {
-        const query = $(this).val();
-        $.get("{% url 'ajax_overdue_search' %}", { q: query }, function (data) {
-            $('#overdue-section').html(data.html);
-        });
-    });
     const readerMap = [];
     document.addEventListener("DOMContentLoaded", function () {
         document.querySelectorAll("#nameDropdown div").forEach(item => {
             readerMap.push({
                 fullName: item.dataset.fullname,
-                telegram: item.dataset.telegram || ""
+                telegram: item.dataset.telegram || "",
+                readerId: item.dataset.readerId
             });
         });
     });
-
-    function selectReader(fullName, telegramUsername) {
-        document.getElementById("nameField").value = fullName;
-        document.getElementById("telegramField").value = telegramUsername;
-        document.querySelectorAll('.dropdown-list').forEach(el => el.style.display = 'none');
-    }
-
-    // ✅ Валидация: имя и логин должны соответствовать
+    
     document.querySelector("#issueModal form").addEventListener("submit", function (e) {
-    const fullName = document.getElementById("nameField").value.trim();
-    const telegramInput = document.getElementById("telegramField").value.trim();
-
-    const matches = readerMap.filter(r => r.fullName === fullName);
-
-    if (matches.length === 1) {
-        const expectedTelegram = matches[0].telegram;
-        if (expectedTelegram && telegramInput !== expectedTelegram) {
+        const fullName = document.getElementById("nameField").value.trim();
+        const telegramInput = document.getElementById("telegramField").value.trim();
+        const readerIdField = document.getElementById("readerIdField");
+    
+        const matches = readerMap.filter(r => r.fullName === fullName);
+    
+        if (matches.length === 1) {
+            const expectedTelegram = matches[0].telegram;
+            readerIdField.value = matches[0].readerId;
+            if (expectedTelegram && telegramInput && telegramInput !== expectedTelegram) {
+                e.preventDefault();
+                alert(`❌ Telegram логин "${telegramInput}" не соответствует имени "${fullName}". Ожидался: ${expectedTelegram}`);
+            }
+        } else if (matches.length > 1) {
+            const exact = matches.find(r => r.telegram === telegramInput);
+            if (exact) {
+                readerIdField.value = exact.readerId;
+            } else {
+                e.preventDefault();
+                const possible = matches.map(r => r.telegram || "—").join(", ");
+                alert(`❌ Имя "${fullName}" не уникально. Укажите Telegram логин. Возможные: ${possible}`);
+            }
+        } else if (matches.length === 0) {
             e.preventDefault();
-            alert(`❌ Telegram логин "${telegramInput}" не соответствует имени "${fullName}". Ожидался: ${expectedTelegram}`);
+            alert(`❌ Читатель "${fullName}" не найден. Зарегистрируйте читателя сначала.`);
         }
-    } else if (matches.length > 1) {
-        // Несколько однофамильцев — проверяем по Telegram
-        const exact = matches.find(r => r.telegram === telegramInput);
-        if (!exact) {
-            e.preventDefault();
-            const possible = matches.map(r => r.telegram || "—").join(", ");
-            alert(`❌ Имя "${fullName}" не уникально. Укажите Telegram логин. Возможные: ${possible}`);
-        }
-    }
     });
-
-
-
-
 </script>
 
 </body>

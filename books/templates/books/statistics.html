@@ -156,7 +156,7 @@
         <a href="{% url 'book_issue' %}" class="header-link">ВЫДАЧА КНИГ</a>
         <a href="{% url 'readers_list' %}" class="header-link">ЧИТАТЕЛИ</a>
         <a href="{% url 'statistics' %}" class="header-link">СТАТИСТИКА</a>
-        <a href="{% url 'staff_login' %}" class="header-link">ВЫХОД</a>
+        <a href="{% url 'staff_logout' %}" class="header-link">ВЫХОД</a>
     </div>
 </header>
 
@@ -188,7 +188,7 @@
 
         <div class="section-box">
             <h2>Общая статистика</h2>
-            <div class="stat-box">Всего книг: <strong>{{ total_books }}</strong></div>
+            <div class="stat-box">Общее количество книг: <strong>{{ total_instances }}</strong></div>
             <div class="stat-box">Выдано книг: <strong>{{ issued_books }}</strong></div>
             <div class="stat-box">Невозвращённые книги: <strong>{{ overdue_books }}</strong></div>
             <div class="stat-box">Всего читателей: <strong>{{ total_readers }}</strong></div>

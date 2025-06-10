@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Акт списания книги</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20mm; }
+        .header { text-align: center; margin-bottom: 20mm; }
+        .details { margin-bottom: 10mm; }
+        .signature { margin-top: 20mm; }
+        .signature p { margin: 5mm 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Акт списания книги</h1>
+    </div>
+    <div class="details">
+        <p><strong>Название книги:</strong> {{ book.title }}</p>
+        <p><strong>Инвентарный номер:</strong> {{ book_instance.inventory_number }}</p>
+        <p><strong>ISBN:</strong> {{ book.isbn|default_if_none:"Не указан" }}</p>
+        <p><strong>Причина списания:</strong> {{ reason|default_if_none:"Не указана" }}</p>
+        <p><strong>Дата списания:</strong> {{ write_off_date }}</p>
+    </div>
+    <div class="signature">
+        <p>Роспись библиотекаря: _________________________</p>
+        <p>Роспись директора: _________________________</p>
+    </div>
+</body>
+</html>

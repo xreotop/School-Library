@@ -1,0 +1,22 @@
+<div id="modalWriteOff" class="modal">
+    <div class="modal-content">
+        <span id="closeModalWriteOff" class="close">×</span>
+        <h2>Акт списания книги</h2>
+        <p><strong>Название книги:</strong> {{ book.title }}</p>
+        <p><strong>Инвентарный номер:</strong> {{ book_instance.inventory_number }}</p>
+        <p><strong>ISBN:</strong> {{ book.isbn|default_if_none:"Не указан" }}</p>
+        <p><strong>Дата списания:</strong> {{ write_off_date }}</p>
+        <p><strong>Роспись библиотекаря:</strong> <input type="text" id="librarian_signature" placeholder="Подпись библиотекаря"></p>
+        <p><strong>Роспись директора:</strong> <input type="text" id="director_signature" placeholder="Подпись директора"></p>
+        <button id="writeOffConfirm" class="add-button">Подтвердить списание</button>
+        <button id="printWriteOff" class="add-button">Распечатать акт</button>
+    </div>
+</div>
+
+<script>
+    $('#closeModalWriteOff').on('click', () => $('#modalWriteOff').hide());
+    $('#printWriteOff').on('click', function () {
+        const instanceId = $('#modalWriteOff').data('instance-id');
+        window.open(`/books/print-write-off/${instanceId}/`, '_blank');
+    });
+</script>

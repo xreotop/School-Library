@@ -1,5 +1,5 @@
-{% for issue in issues %}
-    <tr data-issue-id="{{ issue.pk }}">
+{% for issue in history_issues %}
+    <tr>
         <td>{{ forloop.counter }}</td>
         <td>{{ issue.reader.telegram_username|default:"—" }}</td>
         <td>{{ issue.reader.last_name }} {{ issue.reader.first_name }} {{ issue.reader.middle_name|default:"" }}</td>
@@ -10,17 +10,7 @@
         <td>{{ issue.return_date }}</td>
         <td>{{ issue.returned_date|default:"—" }}</td>
         <td>{{ issue.is_returned|yesno:"Возвращена,Выдана" }}</td>
-        <td>
-            {% if not issue.is_returned %}
-            <form method="post" action="{% url 'return_book_issue' issue.pk %}" style="margin:0">
-                {% csrf_token %}
-                <button type="submit" class="return-button">Вернуть</button>
-            </form>
-            {% else %}
-            —
-            {% endif %}
-        </td>
     </tr>
 {% empty %}
-    <tr><td colspan="11">Нет выданных книг.</td></tr>
+    <tr><td colspan="10">Нет записей в истории.</td></tr>
 {% endfor %}

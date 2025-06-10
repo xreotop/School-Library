@@ -1,86 +1,164 @@
-{% load static %} 
-<!DOCTYPE html>
-<html lang="ru">
+{% load static %}
+<!DOCTYPE html><html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>Библиотека XX</title>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" defer></script>
+    <script src="{% static 'js/book_list.js' %}" defer></script>
+    <style>
+        .book-card:hover { cursor: pointer; }
+        .delete-icon { 
+            position: absolute; 
+            top: 5px; 
+            right: 5px; 
+            text-decoration: none; 
+            color: red; 
+            font-size: 18px; 
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 450px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .close {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
+            color: #aaa;
+        }
+        .close:hover { color: #000; }
+        #inventory-list ul { list-style: none; padding: 0; }
+        #inventory-list li { margin: 5px 0; }
+        .write-off-form { margin-bottom: 10px; }
+    </style>
 </head>
 <body>
-
-<!--  хедер -->
-<header class="header-bar">
-    <div class="header-nav">
-        <a href="{% url 'book_list' %}" class="header-title">УПРАВЛЕНИЕ КНИЖНЫМ ФОНДОМ</a>
-        <a href="{% url 'book_issue' %}" class="header-link">ВЫДАЧА КНИГ</a>
-        <a href="{% url 'readers_list' %}" class="header-link">ЧИТАТЕЛИ</a>
-        <a href="{% url 'statistics' %}" class="header-link">СТАТИСТИКА</a>
-        <a href="{% url 'staff_login' %}" class="header-link">ВЫХОД</a>
-    </div>
-    <div class="header-right">
-        <button id="openModal" class="add-button">➕ Добавить книгу</button>
-    </div>
-</header>
-
-<!-- контент -->
-<main class="content">
-    <div class="filters">
-        <form method="get" id="search-form">
-            <label for="type">Поиск книги по:</label>
-            <select name="type" id="search-type">
-                <option value="title" {% if search_type == 'title' %}selected{% endif %}>названию</option>
-                <option value="author" {% if search_type == 'author' %}selected{% endif %}>автору</option>
-                <option value="year" {% if search_type == 'year' %}selected{% endif %}>году</option>
-            </select>
-            <input type="text" name="q" id="search-box" placeholder="Введите название..." value="{{ query }}">
-        </form>
-    </div>
-
-    <div class="book-container">
-        {% for book in books %}
-        <div class="book-card">
-            <a href="{% url 'delete_book' book.pk %}" class="delete-icon" title="Удалить">❌</a>
-            {% if book.cover_image %}
-                <img src="{{ book.cover_image.url }}" alt="{{ book.title }}">
-            {% else %}
-                <img src="{% static 'images/default_cover.jpg' %}" alt="Обложка отсутствует">
-            {% endif %}
-            <p><strong>{{ book.title }}</strong></p>
-            <p>Автор: {{ book.author }}</p>
-            <p>Издательство: {{ book.publisher|default_if_none:"Не указано" }}</p>
-            <p>Год: {{ book.year|default_if_none:"Не указано" }}</p>
-            <p>Размещение: {{ book.location|default_if_none:"Не указано" }}</p>
-            <p>Количество: {{ book.quantity }}</p>
+    <header class="header-bar">
+        <div class="header-nav">
+            <a href="{% url 'book_list' %}" class="header-title">УПРАВЛЕНИЕ КНИЖНЫМ ФОНДОМ</a>
+            <a href="{% url 'book_issue' %}" class="header-link">ВЫДАЧА КНИГ</a>
+            <a href="{% url 'readers_list' %}" class="header-link">ЧИТАТЕЛИ</a>
+            <a href="{% url 'statistics' %}" class="header-link">СТАТИСТИКА</a>
+            <a href="{% url 'staff_logout' %}" class="header-link">ВЫХОД</a>
         </div>
-        {% endfor %}
-    </div>
-</main>
-
-<!-- Модальное окно -->
+        <div class="header-right">
+            <button id="openWriteOffModal" class="add-button">Списать книгу и создать акт</button>
+            <button id="openModal" class="add-button"> Добавить книгу</button>
+        </div>
+    </header>
+    <main class="content">
+        <div class="write-off-form">
+            <div id="modalWriteOff" class="modal">
+                <div class="modal-content">
+                    <span id="closeModalWriteOff" class="close">×</span>
+                    <h2>Списать книгу</h2>
+                    <form id="writeOffForm" novalidate>
+                        {% csrf_token %}
+                        <p><input type="text" id="inventoryNumber" name="inventory_number" placeholder="Введите инвентарный номер" required style="width: 100%; height: 40px; font-size: 16px;"></p>
+                        <p><textarea id="writeOffReason" name="reason" placeholder="Причина списания (например, износ, утрата)" style="width: 100%; height: 80px; font-size: 16px;"></textarea></p>
+                        <div id="write-off-errors" style="color: red; font-size: 14px;"></div>
+                        <button type="submit" id="confirmWriteOff" class="add-button" formnovalidate>Списать</button>
+                        <button type="button" id="confirmAndPrintWriteOff" class="add-button">Списать и распечатать акт</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="filters">
+            <form method="get" id="search-form">
+                <label for="type">Поиск книги по:</label>
+                <select name="type" id="search-type">
+                    <option value="title" {% if search_type == 'title' %}selected{% endif %}>названию</option>
+                    <option value="author" {% if search_type == 'author' %}selected{% endif %}>автору</option>
+                    <option value="year" {% if search_type == 'year' %}selected{% endif %}>году</option>
+                    <option value="isbn" {% if search_type == 'isbn' %}selected{% endif %}>ISBN</option>
+                </select>
+                <input type="text" name="q" id="search-box" placeholder="Введите запрос..." value="{{ query }}">
+            </form>
+        </div>
+        <div class="book-container">
+            {% for book in books %}
+            <div class="book-card" data-book-id="{{ book.pk }}" 
+                 data-inventory="{% for instance in book.instances.all %}{{ instance.inventory_number }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                <a href="{% url 'delete_book' book.pk %}" class="delete-icon" title="Удалить">❌</a>
+                {% if book.cover_image %}
+                    <img src="{{ book.cover_image.url }}" alt="{{ book.title }}">
+                {% else %}
+                    <img src="{% static 'images/default_cover.jpg' %}" alt="Обложка отсутствует">
+                {% endif %}
+                <p><strong>{{ book.title }}</strong></p>
+                <p>Автор: {{ book.author }}</p>
+                <p>Издательство: {{ book.publisher|default_if_none:"Не указано" }}</p>
+                <p>Год: {{ book.year|default_if_none:"Не указано" }}</p>
+                <p>Размещение: {{ book.location|default_if_none:"Не указано" }}</p>
+                <p>Тип фонда: {{ book.get_fund_type_display|default_if_none:"Не указан" }}</p>
+                <p>Количество: {{ book.quantity }}</p>
+                <p>ISBN: {{ book.isbn|default_if_none:"Не указан" }}</p>
+                {% if book.quantity > 1 %}
+                    <p>Инвентарные номера: <a href="#" class="show-inventories">Показать</a></p>
+                {% else %}
+                    <p>Инвентарный номер: {{ book.instances.first.inventory_number|default_if_none:"Не указан" }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </main>
 <div id="modal" class="modal">
     <div class="modal-content">
-        <span id="closeModal" class="close">&times;</span>
+        <span id="closeModal" class="close">×</span>
         <h2>Добавить книгу</h2>
         <form id="add-book-form" enctype="multipart/form-data">
             {% csrf_token %}
             <p><input type="text" name="title" placeholder="Название книги" required style="width: 100%; height: 40px; font-size: 16px;"></p>
-            
             <p>
                 <input type="text" name="author" placeholder="Автор" required id="author-input" style="width: 100%; height: 40px; font-size: 16px;">
                 <div id="author-suggestions" style="margin-top: 5px;"></div>
             </p>
-        
             <p><input type="text" name="publisher" placeholder="Издательство (необязательно)" style="width: 100%; height: 40px;"></p>
             <p><input type="number" name="year" placeholder="Год написания (необязательно)" style="width: 100%; height: 40px;"></p>
             <p><input type="text" name="location" placeholder="Размещение (необязательное)" style="width: 100%; height: 40px;"></p>
-            <p><input type="file" name="cover_image" style="width: 100%;"></p>
+            <p><input type="file" name="cover_image" style="width: 100%;"> Файл должен быть на латинице</p>
+            <p>Выберите тип фонда
+                <select name="fund_type" required style="width: 100%; height: 40px; font-size: 16px;">
+                    <option value="fiction">Художественный</option>
+                    <option value="educational">Учебный</option>
+                    <option value="reference">Справочный</option>
+                </select>
+            </p>
             <p><input type="number" name="quantity" placeholder="Количество" min="1" style="width: 100%; height: 40px;"></p>
-        
+            <p><input type="text" name="isbn" placeholder="ISBN (необязательно)" style="width: 100%; height: 40px;"></p>
+            <p><input type="text" name="inventory_prefix" placeholder="Префикс инвентарного номера (например, истдевкл9-)" required style="width: 100%; height: 40px;"></p>
             <input type="hidden" name="cover_auto">
             <div id="cover-preview" style="margin: 10px 0;"></div>
             <div id="form-errors" style="color: red; font-size: 14px;"></div>
             <button type="submit" class="add-button">Сохранить</button>
         </form>
+    </div>
+</div>
+
+<div id="modalInventory" class="modal">
+    <div class="modal-content">
+        <span id="closeModalInventory" class="close">×</span>
+        <h2>Инвентарные номера</h2>
+        <div id="inventory-list">
+            <p><strong>Книга:</strong> <span id="inventory-book-title"></span></p>
+            <ul id="inventory-items"></ul>
+        </div>
     </div>
 </div>
 
@@ -93,116 +171,6 @@
     </div>
 </footer>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-$(function () {
-    function updateBooks() {
-        const searchType = $('#search-type').val();
-        const searchTerm = $('#search-box').val();
-        $.get("{% url 'ajax_book_list' %}", {
-            type: searchType,
-            q: searchTerm
-        }, function (data) {
-            $('.book-container').html(data.html);
-        });
-    }
-
-    $('#search-box').on('input', updateBooks);
-    $('#search-type').on('change', function () {
-        $('#search-box').val('');
-        updateBooks();
-    });
-
-    $('#search-form').on('submit', function (e) {
-        e.preventDefault();
-        updateBooks();
-    });
-
-    $('#openModal').on('click', () => $('#modal').css('display', 'flex'));
-    $('#closeModal').on('click', () => $('#modal').hide());
-    window.onclick = (e) => { if (e.target === document.getElementById('modal')) $('#modal').hide(); };
-
-    $('input[name="title"]').on('blur', function () {
-    const title = $(this).val().trim();
-    if (!title) return;
-
-    $.get('/books/fetch-cover/', { title: title }, function (data) {
-        // Обложки
-        if (data.image_urls) {
-            let previewHTML = '<div class="cover-scroll">';
-            data.image_urls.forEach(url => {
-                previewHTML += `<img src="${url}" class="cover-option" style="margin: 5px; width: 80px;">`;
-            });
-            previewHTML += '</div>';
-            $('#cover-preview').html(previewHTML);
-
-            $('.cover-option').on('click', function () {
-                $('.cover-option').removeClass('selected');
-                $(this).addClass('selected');
-                $('input[name="cover_auto"]').val($(this).attr('src'));
-            });
-        }
-
-        // Авторы
-        if (data.authors && data.authors.length > 0) {
-            let authorsHTML = '<div style="background:#f2f2f2; border:1px solid #ccc; padding: 5px;">';
-            data.authors.forEach(author => {
-                authorsHTML += `<div class="author-option" style="cursor:pointer; padding:4px 6px;">${author}</div>`;
-            });
-            authorsHTML += '</div>';
-            $('#author-suggestions').html(authorsHTML);
-
-            $('.author-option').on('click', function () {
-                $('#author-input').val($(this).text());
-                $('#author-suggestions').empty();
-            });
-        }
-    });
-    });
-
-    $('#add-book-form').on('submit', function (e) {
-        e.preventDefault();
-    
-        const formData = new FormData(this);
-        const $button = $(this).find('button[type="submit"]');
-    
-        $button.prop('disabled', true).text('Сохранение...');
-    
-        $.ajax({
-            url: "{% url 'add_book' %}",
-            type: "POST",
-            data: formData,
-            contentType: false,
-            processData: false,
-            success: function (data) {
-                if (data.success) {
-                    $('#modal').hide();
-                    $('#add-book-form')[0].reset();
-                    $('#cover-preview').empty();
-                    $('#form-errors').empty();
-                    updateBooks();
-                }
-            },
-            error: function (xhr) {
-                const errors = xhr.responseJSON?.errors;
-                if (errors) {
-                    let html = '';
-                    for (const field in errors) {
-                        html += `<p>${errors[field].join(', ')}</p>`;
-                    }
-                    $('#form-errors').html(html);
-                } else {
-                    alert("Ошибка при добавлении книги.");
-                }
-            },
-            complete: function () {
-                setTimeout(function () {
-                    $button.prop('disabled', false).text('Сохранить');
-                }, 2000);
-            }
-        });
-    });
-});
-</script>
 </body>
 </html>
+

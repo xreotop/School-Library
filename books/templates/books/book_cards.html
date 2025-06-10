@@ -1,20 +1,24 @@
-
 {% load static %}
 {% for book in books %}
-<div class="book-card">
+<div class="book-card" data-book-id="{{ book.pk }}" data-inventory="{% for instance in book.instances.all %}{{ instance.inventory_number }}{% if not forloop.last %},{% endif %}{% endfor %}">
     <a href="{% url 'delete_book' book.pk %}" class="delete-icon" title="Удалить">❌</a>
-
     {% if book.cover_image %}
         <img src="{{ book.cover_image.url }}" alt="{{ book.title }}">
     {% else %}
         <img src="{% static 'images/default_cover.jpg' %}" alt="Обложка отсутствует">
     {% endif %}
-
     <p><strong>{{ book.title }}</strong></p>
     <p>Автор: {{ book.author }}</p>
     <p>Издательство: {{ book.publisher|default_if_none:"Не указано" }}</p>
     <p>Год: {{ book.year|default_if_none:"Не указано" }}</p>
     <p>Размещение: {{ book.location|default_if_none:"Не указано" }}</p>
+    <p>Тип фонда: {{ book.get_fund_type_display|default_if_none:"Не указан" }}</p>
     <p>Количество: {{ book.quantity }}</p>
+    <p>ISBN: {{ book.isbn|default_if_none:"Не указан" }}</p>
+    {% if book.quantity > 1 %}
+        <p>Инвентарные номера: <a href="#" class="show-inventories">Показать</a></p>
+    {% else %}
+        <p>Инвентарный номер: {{ book.instances.first.inventory_number|default_if_none:"Не указан" }}</p>
+    {% endif %}
 </div>
 {% endfor %}

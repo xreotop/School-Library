@@ -52,9 +52,11 @@ body {
 }
 
 .header-right {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
+     width: 100%;
+     display: flex;
+     justify-content: flex-start;
+     margin-top: 10px;
+     gap: 10px;
 }
 
 .add-button {
@@ -68,9 +70,20 @@ body {
     transition: 0.2s;
 }
 
-.add-button:hover {
+#openWriteOffModal {
+    background-color: #dc3545;
+}
+
+#openWriteOffModal:hover {
+    background-color: #c82333;
+}
+
+#openModal {
+    background-color: #4CAF50;
+}
+
+#openModal:hover {
     background-color: #388e3c;
-    color: white;
 }
 
 /* Контент */
@@ -120,7 +133,7 @@ body {
     padding: 8px 10px;
     border-radius: 10px;
     box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.2);
-    width: 200px;
+    width: 150px;
     text-align: center;
     position: relative;
     transition: transform 0.2s;
@@ -139,7 +152,7 @@ body {
 
 .book-card img {
     width: 100%;
-    height: 280px;
+    height: 200px; /* адаптивная высота */
     object-fit: cover;
     border-radius: 5px;
 }
@@ -152,6 +165,7 @@ body {
     font-size: 18px;
     color: red;
     cursor: pointer;
+    z-index: 10;
 }
 
 /* Футер */
@@ -329,5 +343,26 @@ body {
     border-radius: 4px;
 }
 
-
-
+#writeOffForm button {
+    margin-right: 10px;
+    margin-bottom: 10px;
+    width: calc(50% - 10px);
+    height: 40px;
+    padding: 8px 10px;
+    box-sizing: border-box;
+    font-size: 14px;
+    line-height: 1.2;
+    white-space: nowrap; /* Предотвращаем перенос текста */
+    text-align: center;
+    background-color: #4CAF50; /* Пример цвета фона */
+    color: white; /* Цвет текста */
+    border: none; /* Убираем границу, если есть */
+    border-radius: 4px; /* Скругленные углы */
+    cursor: pointer; /* Курсор при наведении */
+}
+#writeOffForm button:last-child {
+    margin-right: 0;
+}
+#writeOffForm button:hover
+    {background-color: #3d8b40; /* Более тёмный оттенок при наведении */
+}

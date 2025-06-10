@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Вход для читателя</title>
-     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <style>
         body {
             font-family: Arial;
@@ -101,16 +101,22 @@
 
 <div class="register-link" id="openRegister">Нет аккаунта? Зарегистрироваться</div>
 
-<!--  Модальное окно регистрации -->
+<!-- Модальное окно регистрации -->
 <div id="registerModal">
     <div class="modal-content">
         <div class="close-modal" id="closeRegister">×</div>
         <h3>Регистрация</h3>
         <form method="post" action="{% url 'reader_register' %}">
             {% csrf_token %}
-            <input type="text" name="full_name" placeholder="Имя и фамилия" required>
-            <input type="text" name="telegram_username" placeholder="Telegram (с @)" required>
-            <input type="password" name="password" id="register-password" placeholder="Пароль" required>
+            <input type="text" name="last_name" placeholder="Введите фамилию" required>
+            <input type="text" name="first_name" placeholder="Введите имя" required>
+            <input type="text" name="middle_name" placeholder="Введите отчество (необязательно)">
+            <input type="number" name="birth_year" placeholder="Введите год рождения (необязательно)">
+            <input type="text" name="address" placeholder="Введите домашний адрес (необязательно)">
+            <input type="text" name="phone" placeholder="Введите телефон (необязательно)">
+            <input type="text" name="school_class" placeholder="Введите класс" required>
+            <input type="text" name="telegram_username" placeholder="Введите Telegram (с @)" required>
+            <input type="password" name="password" id="register-password" placeholder="Придумайте пароль" required>
             <div class="checkbox-container">
                 <input type="checkbox" id="toggle-register-password">
                 <label for="toggle-register-password">Показать пароль</label>
@@ -119,6 +125,7 @@
         </form>
     </div>
 </div>
+
 <footer class="site-footer">
     <div class="footer-content">
         <p>Made by Andrey Kovalev, Vladivostok, Russia</p>
@@ -127,6 +134,7 @@
         </a>
     </div>
 </footer>
+
 <script>
     // Окно регистрации
     const registerModal = document.getElementById("registerModal");
@@ -148,6 +156,16 @@
     document.getElementById('toggle-register-password').addEventListener('change', function () {
         const input = document.getElementById('register-password');
         input.type = this.checked ? 'text' : 'password';
+    });
+
+    // Проверка Telegram-логина
+    document.querySelector("#registerModal form").addEventListener("submit", function(e) {
+        const telegramInput = this.querySelector("input[name='telegram_username']");
+        const value = telegramInput.value.trim();
+        if (value && !value.startsWith('@')) {
+            e.preventDefault();
+            alert("Telegram логин должен начинаться с символа @");
+        }
     });
 </script>
 

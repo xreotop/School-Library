@@ -10,6 +10,5 @@ def send_telegram_message(chat_id, message):
     try:
         response = requests.post(url, data=data)
         return response.status_code == 200
-    except Exception as e:
-        print("Ошибка при отправке сообщения:", e)
+    except Exception:
         return False
