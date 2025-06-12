@@ -8,7 +8,6 @@ class Book(models.Model):
         ('educational', 'Учебный'),
         ('reference', 'Справочный'),
     ]
-
     title = models.CharField(max_length=200)
     author = models.CharField(max_length=100)
     publisher = models.CharField(max_length=100, blank=True, null=True)
@@ -17,7 +16,7 @@ class Book(models.Model):
     cover_image = models.ImageField(upload_to='book_covers/', blank=True, null=True)
     isbn = models.CharField(max_length=13, blank=True, null=True)
     inventory_prefix = models.CharField(max_length=20, blank=True, null=True)
-    fund_type = models.CharField(max_length=20, choices=FUND_TYPE_CHOICES, default='fiction')  # Новое поле
+    fund_type = models.CharField(max_length=20, choices=FUND_TYPE_CHOICES, default='fiction')
 
     def __str__(self):
         return self.title
@@ -46,15 +45,15 @@ class BookInstance(models.Model):
 from django.contrib.auth.hashers import make_password, check_password
 
 class Reader(models.Model):
-    registration_year = models.IntegerField("Год регистрации")  # Год регистрации в библиотеке
-    last_name = models.CharField("Фамилия", max_length=50)  # Фамилия
-    first_name = models.CharField("Имя", max_length=50)  # Имя
-    middle_name = models.CharField("Отчество", max_length=50, blank=True, null=True)  # Отчество (необязательно)
-    birth_year = models.IntegerField("Год рождения", blank=True, null=True)  # Год рождения (необязательно)
-    address = models.CharField("Домашний адрес", max_length=200, blank=True, null=True)  # Адрес (необязательно)
-    phone = models.CharField("Телефон", max_length=20, blank=True, null=True)  # Телефон (необязательно)
-    school_class = models.CharField("Класс", max_length=10)  # Класс
-    telegram_username = models.CharField("Telegram", max_length=100, blank=True, null=True)  # Telegram (необязательно)
+    registration_year = models.IntegerField("Год регистрации")
+    last_name = models.CharField("Фамилия", max_length=50)
+    first_name = models.CharField("Имя", max_length=50)
+    middle_name = models.CharField("Отчество", max_length=50, blank=True, null=True)
+    birth_year = models.IntegerField("Год рождения", blank=True, null=True)
+    address = models.CharField("Домашний адрес", max_length=200, blank=True, null=True)
+    phone = models.CharField("Телефон", max_length=20, blank=True, null=True)
+    school_class = models.CharField("Класс", max_length=10)
+    telegram_username = models.CharField("Telegram", max_length=100, blank=True, null=True)
     chat_id = models.BigIntegerField("Chat ID Telegram", null=True, blank=True)
     password = models.CharField("Пароль", max_length=128)
 
@@ -74,7 +73,7 @@ from datetime import timedelta
 class BookIssue(models.Model):
     reader = models.ForeignKey('Reader', on_delete=models.CASCADE)
     book = models.ForeignKey('Book', on_delete=models.CASCADE)
-    inventory_number = models.CharField("Инвентарный номер", max_length=50, blank=True, null=True)  # Новое поле
+    inventory_number = models.CharField("Инвентарный номер", max_length=50, blank=True, null=True)
     issued_by = models.CharField("Сотрудник", max_length=100, blank=True, null=True)
     issue_date = models.DateField(auto_now_add=True)
     return_date = models.DateField(default=timezone.now() + timedelta(days=14))
@@ -82,7 +81,6 @@ class BookIssue(models.Model):
     is_returned = models.BooleanField("Возвращена", default=False)
     def __str__(self):
         return f"{self.reader} — {self.book} ({self.inventory_number or 'Без инв. номера'})"
-
 class BookFeedback(models.Model):
     reader = models.ForeignKey('Reader', on_delete=models.CASCADE)
     book = models.ForeignKey('Book', on_delete=models.CASCADE)
@@ -90,7 +88,7 @@ class BookFeedback(models.Model):
     comment = models.TextField("Отзыв", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     class Meta:
-        unique_together = ('reader', 'book')  # Один отзыв на книгу от одного читателя
+        unique_together = ('reader', 'book')  # Один отзыв на книгу от одного читат
     def __str__(self):
         return f"{self.reader.full_name} -> {self.book.title}"
 

@@ -59,14 +59,16 @@
         </div>
         <button type="submit">Войти</button>
     </form>
-    {% if error %}
-        <div class="error">{{ error }}</div>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="error">{{ message|escape }}</div>
+        {% endfor %}
     {% endif %}
 </div>
 <footer class="site-footer">
     <div class="footer-content">
         <p>Made by Andrey Kovalev, Vladivostok, Russia</p>
-        <a href="https://t.me/zxcikona20" target="_blank" title="Telegram">
+        <a href="https://t.me/zxcikona20" target="_blank" rel="noopener noreferrer" title="Telegram">
             <img src="{% static 'images/telegram_icon.png' %}" alt="Telegram" class="telegram-icon">
         </a>
     </div>

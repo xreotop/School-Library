@@ -8,7 +8,7 @@ $(function () {
             q: searchTerm
         }, function (data) {
             $('.book-container').html(data.html);
-            bindCardClickEvents(); // Привязываем события после обновления
+            bindCardClickEvents();
         }).fail(function (xhr) {
             console.error('Ошибка при загрузке книг:', xhr.responseText);
         });

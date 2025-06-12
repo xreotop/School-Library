@@ -15,11 +15,9 @@
 
         .header-bar {
             background: #ffffff;
-            
             padding: 10px 20px;
             display: flex;
             justify-content: space-between;
-            
         }
 
         .header-nav {
@@ -96,6 +94,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
         th:nth-child(3), td:nth-child(3) {
             width: 160px;
             min-width: 160px;
@@ -103,7 +102,6 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-            
 
         th:nth-child(5), td:nth-child(5) {
             width: 120px;
@@ -220,7 +218,7 @@
                 {% for fb in all_feedback %}
                     <tr>
                         <td>{{ fb.book.title }}</td>
-                        <td>{{ fb.reader.full_name }}</td>
+                        <td>{{ fb.reader.last_name }} {{ fb.reader.first_name }} {{ fb.reader.middle_name|default:'' }}</td>
                         <td>{{ fb.reader.telegram_username|default:"—" }}</td> 
                         <td>{{ fb.comment }}</td>
                         <td>
@@ -231,14 +229,12 @@
                         </td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="4">Отзывы отсутствуют</td></tr>
+                    <tr><td colspan="5">Отзывы отсутствуют</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </section>
 </main>
-
-
 
 </body>
 </html>

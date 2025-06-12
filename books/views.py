@@ -1,20 +1,45 @@
 from django.shortcuts import redirect
-
+import jwt
+import datetime
+from django.conf import settings
+from django.shortcuts import render, redirect
+from django.http import JsonResponse
 
 # декоратор
+# Декоратор с проверкой токена
 def staff_required(view_func):
     def _wrapped_view(request, *args, **kwargs):
-        if request.session.get('is_staff_logged_in'):
-            return view_func(request, *args, **kwargs)
+        token = request.session.get('staff_token')
+        if not token:
+            return redirect('staff_login')
+        try:
+            decoded = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            if decoded.get('pin') == settings.STAFF_PIN:
+                return view_func(request, *args, **kwargs)
+        except jwt.ExpiredSignatureError:
+            del request.session['staff_token']
+            return redirect('staff_login')
+        except jwt.InvalidTokenError:
+            del request.session['staff_token']
+            return redirect('staff_login')
         return redirect('staff_login')
     return _wrapped_view
 
+
+def generate_token(pin):
+    if pin == settings.STAFF_PIN:
+        payload = {
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=120),  # Срок действия 15 минут
+            'iat': datetime.datetime.utcnow(),
+            'pin': pin,
+        }
+        return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+    return None
 
 @staff_required
 def book_list(request):
     search_type = request.GET.get('type', 'title')
     query = request.GET.get('q', '')
-
     books = Book.objects.prefetch_related('instances').all()
     if query:
         if search_type == 'title':
@@ -28,7 +53,6 @@ def book_list(request):
                 books = books.none()
         elif search_type == 'isbn':
             books = books.filter(isbn__icontains=query)
-
     return render(request, 'books/book_list.html', {
         'books': books,
         'query': query,
@@ -56,7 +80,6 @@ def add_book(request):
             book = form.save(commit=False)
             cover_url = request.POST.get('cover_auto')
             quantity = int(request.POST.get('quantity', 1))
-
             # Обработка обложки
             if cover_url and not request.FILES.get('cover_image'):
                 try:
@@ -71,7 +94,6 @@ def add_book(request):
                     return JsonResponse({'success': False, 'errors': {'cover_image': ['Ошибка при загрузке обложки.']}}, status=400)
             elif request.FILES.get('cover_image'):
                 book.cover_image = request.FILES['cover_image']
-
             try:
                 book.save()
                 # Генерация экземпляров с уникальными инвентарными номерами
@@ -81,7 +103,6 @@ def add_book(request):
                     instance.save()  # Генерация inventory_number произойдёт в save() метода BookInstance
             except Exception as e:
                 return JsonResponse({'success': False, 'errors': {'general': [f'Ошибка при сохранении книги: {str(e)}']}}, status=400)
-
             return JsonResponse({'success': True})
         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
     return redirect('book_list')
@@ -134,8 +155,6 @@ def print_write_off_manual(request):
             }
             html = render_to_string('books/write_off_print.html', context)
             response = HttpResponse(html)
-            response['Content-Disposition'] = f'attachment; filename="act_write_off_{inventory_number}.html"'
-            response['Content-Type'] = 'text/html'
             return response
         except BookInstance.DoesNotExist:
             return redirect('book_list')
@@ -146,7 +165,6 @@ def print_write_off_manual(request):
 def ajax_book_list(request):
     search_type = request.GET.get('type', 'title')
     query = request.GET.get('q', '')
-
     books = Book.objects.prefetch_related('instances').all()
     if query:
         if search_type == 'title':
@@ -160,7 +178,6 @@ def ajax_book_list(request):
                 books = books.none()
         elif search_type == 'isbn':
             books = books.filter(isbn__icontains=query)
-
     html = render_to_string('books/book_cards.html', {'books': books})
     return JsonResponse({'html': html})
 from django.shortcuts import render, redirect
@@ -171,20 +188,74 @@ def login_choice(request):
     return render(request, 'books/login_choice.html')
 
 
+
+
+
+
+
 def staff_login(request):
     return render(request, 'books/staff_login.html')
 
 
-def verify_pin(request):
-    if request.method == 'POST':
-        pin = request.POST.get('pin')
-        if pin == settings.STAFF_PIN:
-            request.session['is_staff_logged_in'] = True  #  флаг авторизации
-            return redirect('book_list')
-        else:
-            return render(request, 'books/staff_login.html', {'error': 'Неверный пин-код'})
-    return redirect('staff_login')
 
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.core.cache import cache
+from django.utils import timezone
+from django.conf import settings
+from captcha.fields import CaptchaField
+
+
+# Функция авторизации с ограничением попыток
+def verify_pin(request):
+    # Проверяем, является ли запрос методом POST (отправка формы)
+    if request.method == 'POST':
+        # Получаем введённый PIN-код из формы
+        pin = request.POST.get('pin')
+        # Получаем IP-адрес пользователя для идентификации попыток
+        ip_address = request.META.get('REMOTE_ADDR')
+        # Формируем уникальный ключ для хранения количества попыток в кэше, основанный на IP
+        attempt_key = f'pin_attempts_{ip_address}'
+        # Получаем текущее количество попыток из кэша, по умолчанию 0, если ключа нет
+        attempts = cache.get(attempt_key, 0)
+
+        # Проверяем, не превышено ли максимальное количество попыток (7)
+        if attempts >= 7:
+            # Получаем время последней попытки из кэша, по умолчанию текущее время
+            last_attempt = cache.get(f'pin_last_attempt_{ip_address}', timezone.now())
+            # Проверяем, прошло ли менее 7 минут (420 секунд) с последней попытки
+            if (timezone.now() - last_attempt).seconds < 420:  # 7 минут блокировки
+                # Выводим сообщение об ошибке и рендерим страницу входа
+                messages.error(request, "Слишком много попыток. Попробуйте позже.")
+                return render(request, 'books/staff_login.html')
+
+        # Проверяем, совпадает ли введённый PIN-код с заданным в настройках
+        if pin == settings.STAFF_PIN:
+            # Генерируем токен, если PIN верный (предполагается, что generate_token определена)
+            token = generate_token(pin)
+            if token:
+                # Сохраняем токен в сессии
+                request.session['staff_token'] = token
+                # Устанавливаем срок действия сессии на 4 часа (240 минут)
+                request.session.set_expiry(240 * 60)  # Сессия истекает через 4 часа
+                # Сбрасываем счётчик попыток при успешной авторизации
+                cache.delete(attempt_key)  # Сброс счётчика при успехе
+                # Перенаправляем на страницу списка книг
+                return redirect('book_list')
+        else:
+            # Увеличиваем счётчик попыток на 1 при неверном PIN
+            attempts += 1
+            # Сохраняем обновлённое количество попыток в кэше на 1 час
+            cache.set(attempt_key, attempts, timeout=3600)  # Счётчик на 1 час
+            # Если достигнуто 7 попыток, записываем время последней попытки
+            if attempts >= 7:
+                cache.set(f'pin_last_attempt_{ip_address}', timezone.now(), timeout=420)  # 7 минут блокировки
+            # Выводим сообщение об ошибке и рендерим страницу с сообщениями
+            messages.error(request, "Неверный пин-код")
+            return render(request, 'books/staff_login.html', {'messages': messages.get_messages(request)})
+
+    # Если запрос не POST, перенаправляем на страницу входа
+    return redirect('staff_login')
 
 def staff_logout(request):
     request.session.flush()
@@ -301,23 +372,19 @@ def add_reader(request):
         school_class = request.POST.get('school_class')
         telegram = request.POST.get('telegram_username', '').strip() or None
         password = request.POST.get('password', '')
-
         # Проверка Telegram-логина
         if telegram and not telegram.startswith('@'):
             return JsonResponse({'success': False, 'message': 'Telegram логин должен начинаться с символа @'})
-
         # Проверка обязательных полей
         if not all([registration_year, last_name, first_name, school_class]):
             return JsonResponse({'success': False, 'message': 'Заполните все обязательные поля'})
-
-        # Проверка года регистрации
+        # Провера года регистрации
         try:
             registration_year = int(registration_year)
             if registration_year < 1900:
                 return JsonResponse({'success': False, 'message': 'Год регистрации должен быть больше 1900'})
         except ValueError:
             return JsonResponse({'success': False, 'message': 'Год регистрации должен быть числом'})
-
         # Проверка года рождения (если указан)
         if birth_year:
             try:
@@ -328,7 +395,6 @@ def add_reader(request):
                 return JsonResponse({'success': False, 'message': 'Год рождения должен быть числом'})
         else:
             birth_year = None
-
         try:
             reader = Reader(
                 registration_year=registration_year,
@@ -346,8 +412,7 @@ def add_reader(request):
             return JsonResponse({'success': True, 'message': 'Читатель успешно добавлен'})
         except Exception as e:
             return JsonResponse({'success': False, 'message': f'Ошибка при добавлении читателя: {str(e)}'})
-
-    return JsonResponse({'success': False, 'message': 'Метод не поддерживается'})  # Для не-POST запросов
+    return JsonResponse({'success': False, 'message': 'Метод не поддерживается'})  #
 
 
 
@@ -371,15 +436,12 @@ def edit_reader(request, reader_id):
         school_class = request.POST.get('school_class')
         telegram = request.POST.get('telegram_username', '').strip() or None
         password = request.POST.get('password', '')
-
         # Проверка Telegram-логина
         if telegram and not telegram.startswith('@'):
             return JsonResponse({'success': False, 'message': 'Telegram логин должен начинаться с символа @'})
-
         # Проверка обязательных полей
         if not all([registration_year, last_name, first_name, school_class]):
             return JsonResponse({'success': False, 'message': 'Заполните все обязательные поля'})
-
         # Проверка года регистрации
         try:
             registration_year = int(registration_year)
@@ -387,7 +449,6 @@ def edit_reader(request, reader_id):
                 return JsonResponse({'success': False, 'message': 'Год регистрации должен быть больше 1900'})
         except ValueError:
             return JsonResponse({'success': False, 'message': 'Год регистрации должен быть числом'})
-
         # Проверка года рождения (если указан)
         if birth_year:
             try:
@@ -398,7 +459,6 @@ def edit_reader(request, reader_id):
                 return JsonResponse({'success': False, 'message': 'Год рождения должен быть числом'})
         else:
             birth_year = None
-
         try:
             # Обновляем данные читателя
             reader.registration_year = registration_year
@@ -416,8 +476,7 @@ def edit_reader(request, reader_id):
             return JsonResponse({'success': True, 'message': 'Читатель успешно обновлён'})
         except Exception as e:
             return JsonResponse({'success': False, 'message': f'Ошибка при обновлении читателя: {str(e)}'})
-
-    return JsonResponse({'success': False, 'message': 'Метод не поддерживается'})  # Для не-POST запросов
+    return JsonResponse({'success': False, 'message': 'Метод не поддерживается'})
 
 #Информация о выданных книгах
 
@@ -485,30 +544,25 @@ def add_book_issue(request):
         book_id = request.POST.get('book_id')
         inventory_number = request.POST.get('inventory_number')
         issued_by = request.POST.get('issued_by', '').strip() or None
-
         try:
             reader = Reader.objects.get(id=reader_id)
         except Reader.DoesNotExist:
             messages.error(request, "Читатель не найден.")
             return redirect('book_issue')
-
         try:
             book = Book.objects.get(id=book_id)
         except Book.DoesNotExist:
             messages.error(request, "Книга не найдена.")
             return redirect('book_issue')
-
         if inventory_number:
             try:
                 BookInstance.objects.get(book=book, inventory_number=inventory_number)
             except BookInstance.DoesNotExist:
                 messages.error(request, "Инвентарный номер не найден для этой книги.")
                 return redirect('book_issue')
-
             if BookIssue.objects.filter(book=book, inventory_number=inventory_number, is_returned=False).exists():
                 messages.error(request, "Этот экземпляр книги уже выдан.")
                 return redirect('book_issue')
-
         issue = BookIssue(
             reader=reader,
             book=book,
@@ -605,7 +659,8 @@ def get_available_instances(request):
     ).values('inventory_number')
     return JsonResponse({'instances': list(instances)})
 
-
+from django.core.cache import cache
+from django.utils import timezone
 # reader_login
 
 
@@ -620,9 +675,9 @@ def reader_login_view(request):
                 request.session['reader_id'] = reader.id
                 return redirect('reader_catalog')
             else:
-                messages.error(request, "Неверный пароль.")
+                messages.error(request, "Неверный логин или пароль.")
         except Reader.DoesNotExist:
-            messages.error(request, "Пользователь не найден.")
+            messages.error(request, "Неверный логин или пароль.")
 
     return render(request, 'books/reader_login.html')
 
@@ -650,19 +705,15 @@ def reader_register_view(request):
         school_class = request.POST.get('school_class')
         telegram = request.POST.get('telegram_username')
         password = request.POST.get('password')
-
         if not all([last_name, first_name, school_class, telegram, password]):
             messages.error(request, "Заполните все обязательные поля")
             return render(request, 'books/reader_login.html')
-
         if not telegram.startswith('@'):
             messages.error(request, "Telegram должен начинаться с @")
             return render(request, 'books/reader_login.html')
-
         if Reader.objects.filter(telegram_username=telegram).exists():
             messages.error(request, "Пользователь с таким Telegram уже зарегистрирован.")
             return render(request, 'books/reader_login.html')
-
         try:
             if birth_year:
                 birth_year = int(birth_year)
@@ -674,7 +725,6 @@ def reader_register_view(request):
         except ValueError:
             messages.error(request, "Год рождения должен быть числом")
             return render(request, 'books/reader_login.html')
-
         reader = Reader(
             registration_year=registration_year,
             last_name=last_name,
@@ -691,7 +741,6 @@ def reader_register_view(request):
 
         messages.success(request, "Регистрация успешна. Теперь войдите.")
         return redirect('reader_login')
-
     return render(request, 'books/reader_login.html')
 
 def reader_catalog(request):
@@ -954,12 +1003,10 @@ def statistics_view(request):
         dislikes=Count('bookfeedback', filter=Q(bookfeedback__is_like=False))
     ).order_by('-dislikes')[:5]
     all_feedback = BookFeedback.objects.select_related('book', 'reader').exclude(comment="")
-
     # Подсчёт книг с экземплярами
     books_with_instances = Book.objects.annotate(instance_count=Count('instances', distinct=True)).filter(
         instance_count__gt=0).count()
     total_instances = BookInstance.objects.count()
-
     return render(request, 'books/statistics.html', {
         'total_instances': total_instances,
         'issued_books': issued_books,
@@ -969,7 +1016,6 @@ def statistics_view(request):
         'unpopular_books': unpopular_books,
         'all_feedback': all_feedback
     })
-
 from django.views.decorators.http import require_POST
 from django.shortcuts import redirect
 from .models import BookFeedback
