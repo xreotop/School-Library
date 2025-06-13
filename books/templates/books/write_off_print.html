@@ -4,27 +4,68 @@
     <meta charset="UTF-8">
     <title>Акт списания книги</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20mm; }
-        .header { text-align: center; margin-bottom: 20mm; }
-        .details { margin-bottom: 10mm; }
-        .signature { margin-top: 20mm; }
-        .signature p { margin: 5mm 0; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20mm;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20mm;
+        }
+        .details {
+            margin-bottom: 10mm;
+        }
+        .details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .details th, .details td {
+            border: 1px solid black;
+            padding: 5px;
+            text-align: left;
+        }
+        .signature {
+            margin-top: 30mm;
+        }
+        .signature p {
+            margin: 10mm 0 0 0;
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Акт списания книги</h1>
+        <h1>Приложение к акту № {{ write_off_date|date:'d' }} от {{ write_off_date|date:'d.m.Y' }}</h1>
+        <h3>СПИСОК на исключение объектов библиотечного фонда по причине: {{ reason|default_if_none:"Не указана" }}</h3>
     </div>
     <div class="details">
-        <p><strong>Название книги:</strong> {{ book.title }}</p>
-        <p><strong>Инвентарный номер:</strong> {{ book_instance.inventory_number }}</p>
-        <p><strong>ISBN:</strong> {{ book.isbn|default_if_none:"Не указан" }}</p>
-        <p><strong>Причина списания:</strong> {{ reason|default_if_none:"Не указана" }}</p>
-        <p><strong>Дата списания:</strong> {{ write_off_date }}</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>№ п/п</th>
+                    <th>Инвентарный номер</th>
+                    <th>Наименование документа</th>
+                    <th>Количество экземпляров</th>
+                    <th>Код фонда</th>
+                    <th>Классификационные признаки</th>
+                    <th>Сумма, руб.</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>{{ book_instance.inventory_number }}</td>
+                    <td>{{ book.title }}</td>
+                    <td>1</td>
+                    <td>{{ book.fund_type }}</td>
+                    <td>-</td>
+                    <td>{{ book.acquisition_price|default_if_none:"0.00" }}</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
     <div class="signature">
-        <p>Роспись библиотекаря: _________________________</p>
-        <p>Роспись директора: _________________________</p>
+        <p>Роспись библиотекаря: _________________________ {{ librarian_signature }}</p>
+        <p>Роспись директора: ____________________________ {{ director_signature }}</p>
     </div>
 </body>
 </html>

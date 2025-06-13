@@ -36,6 +36,7 @@ def generate_token(pin):
         return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
     return None
 
+#страницы
 @staff_required
 def book_list(request):
     search_type = request.GET.get('type', 'title')
@@ -59,6 +60,7 @@ def book_list(request):
         'search_type': search_type
     })
 
+
 from .forms import BookForm
 import requests
 from django.http import JsonResponse, HttpResponse
@@ -70,7 +72,6 @@ from django.core.files.base import ContentFile
 from .models import Book, BookInstance
 from .forms import BookForm
 import os
-
 
 
 def add_book(request):
@@ -106,6 +107,7 @@ def add_book(request):
             return JsonResponse({'success': True})
         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
     return redirect('book_list')
+
 
 def delete_book(request, pk):
     book = get_object_or_404(Book, pk=pk)
@@ -160,8 +162,7 @@ def print_write_off_manual(request):
             return redirect('book_list')
     return redirect('book_list')
 
-
-
+#Поиск
 def ajax_book_list(request):
     search_type = request.GET.get('type', 'title')
     query = request.GET.get('q', '')
@@ -180,6 +181,8 @@ def ajax_book_list(request):
             books = books.filter(isbn__icontains=query)
     html = render_to_string('books/book_cards.html', {'books': books})
     return JsonResponse({'html': html})
+
+
 from django.shortcuts import render, redirect
 from django.conf import settings
 

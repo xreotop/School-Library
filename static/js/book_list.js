@@ -20,8 +20,9 @@ $(function () {
                 return;
             }
             const bookId = $(this).data('book-id');
-            const quantity = parseInt($(this).find('p:contains("Количество:")').text().replace('Количество:', '').trim());
+            const quantity = parseInt($(this).find('p:contains("Количество экземпляров:")').text().replace('Количество экземпляров:', '').trim());
             if (quantity > 1) {
+                console.log('Клик по карточке, открытие модального окна для книги ID:', bookId);
                 const inventoryList = $(this).data('inventory').split(',').map(item => `<li>${item.trim()}</li>`).join('');
                 $('#inventory-book-title').text($(this).find('strong').text());
                 $('#inventory-items').html(inventoryList);
@@ -31,13 +32,16 @@ $(function () {
 
         $('.show-inventories').off('click').on('click', function (e) {
             e.preventDefault();
+            console.log('Клик по ссылке "Показать"');
             const bookCard = $(this).closest('.book-card');
-            const quantity = parseInt(bookCard.find('p:contains("Количество:")').text().replace('Количество:', '').trim());
+            const quantity = parseInt(bookCard.find('p:contains("Количество экземпляров:")').text().replace('Количество экземпляров:', '').trim());
             if (quantity > 1) {
                 const inventoryList = bookCard.data('inventory').split(',').map(item => `<li>${item.trim()}</li>`).join('');
                 $('#inventory-book-title').text(bookCard.find('strong').text());
                 $('#inventory-items').html(inventoryList);
                 $('#modalInventory').css('display', 'flex');
+            } else {
+                console.log('Количество экземпляров <= 1, модальное окно не открывается');
             }
         });
     }
@@ -61,12 +65,18 @@ $(function () {
 
     $('#openModal').on('click', () => $('#modal').css('display', 'flex'));
     $('#closeModal').on('click', () => $('#modal').hide());
-    $('#closeModalInventory').on('click', () => $('#modalInventory').hide());
+    $('#closeModalInventory').on('click', () => {
+        console.log('Закрытие модального окна инвентарных номеров');
+        $('#modalInventory').hide();
+    });
     $('#closeModalWriteOff').on('click', () => $('#modalWriteOff').hide());
 
     window.onclick = (e) => {
         if (e.target === document.getElementById('modal')) $('#modal').hide();
-        if (e.target === document.getElementById('modalInventory')) $('#modalInventory').hide();
+        if (e.target === document.getElementById('modalInventory')) {
+            console.log('Клик вне модального окна инвентарных номеров');
+            $('#modalInventory').hide();
+        }
         if (e.target === document.getElementById('modalWriteOff')) $('#modalWriteOff').hide();
     };
 
@@ -134,7 +144,6 @@ $(function () {
             processData: false,
             success: function (data) {
                 if (data.success) {
-                    console.log('Книга успешно добавлена');
                     $('#modal').hide();
                     $('#add-book-form')[0].reset();
                     $('#cover-preview').empty();
@@ -168,7 +177,7 @@ $(function () {
         e.preventDefault();
         const inventoryNumber = $('#inventoryNumber').val().trim();
         const reason = $('#writeOffReason').val().trim();
-        const $button = $('#confirmWriteOff'); // Кнопка "Списать"
+        const $button = $('#confirmWriteOff');
         const $errors = $('#write-off-errors');
 
         if (!inventoryNumber) {
@@ -188,10 +197,10 @@ $(function () {
             },
             success: function (data) {
                 if (data.success) {
-                    alert(data.message); // Уведомление об успехе
+                    alert(data.message);
                     updateBooks();
-                    $('#writeOffForm')[0].reset(); // Сбрасываем форму
-                    $('#modalWriteOff').hide(); // Закрываем окно
+                    $('#writeOffForm')[0].reset();
+                    $('#modalWriteOff').hide();
                 } else {
                     $errors.text('Ошибка: ' + (data.message || 'Неверный инвентарный номер.'));
                 }
@@ -201,7 +210,7 @@ $(function () {
                 $errors.text('Произошла ошибка при списании. Проверьте соединение.');
             },
             complete: function () {
-                $button.prop('disabled', false).text('Списать'); // Восстанавливаем текст кнопки
+                $button.prop('disabled', false).text('Списать');
             }
         });
     });
@@ -209,7 +218,7 @@ $(function () {
     $('#confirmAndPrintWriteOff').on('click', function () {
         const inventoryNumber = $('#inventoryNumber').val().trim();
         const reason = $('#writeOffReason').val().trim();
-        const $button = $(this); // Кнопка "Списать и печатать"
+        const $button = $(this);
         const $errors = $('#write-off-errors');
 
         if (!inventoryNumber) {
@@ -229,7 +238,7 @@ $(function () {
             },
             success: function (data) {
                 if (data.success) {
-                    alert(data.message); // Уведомление об успехе
+                    alert(data.message);
                     updateBooks();
                     const printHtml = data.print_html;
                     const win = window.open('', '_blank');
@@ -237,8 +246,8 @@ $(function () {
                     win.document.close();
                     win.print();
                     win.close();
-                    $('#writeOffForm')[0].reset(); // Сбрасываем форму
-                    $('#modalWriteOff').hide(); // Закрываем окно
+                    $('#writeOffForm')[0].reset();
+                    $('#modalWriteOff').hide();
                 } else {
                     $errors.text('Ошибка: ' + (data.message || 'Неверный инвентарный номер.'));
                 }
@@ -248,10 +257,10 @@ $(function () {
                 $errors.text('Произошла ошибка при списании. Проверьте соединение.');
             },
             complete: function () {
-                $button.prop('disabled', false).text('Списать и распечатать акт'); // Восстанавливаем текст кнопки
+                $button.prop('disabled', false).text('Списать и распечатать акт');
             }
         });
     });
 
-    bindCardClickEvents(); // Инициализация при загрузке страницы
+    bindCardClickEvents();
 });

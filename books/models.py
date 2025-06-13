@@ -15,8 +15,13 @@ class Book(models.Model):
     location = models.CharField(max_length=100, blank=True, null=True)
     cover_image = models.ImageField(upload_to='book_covers/', blank=True, null=True)
     isbn = models.CharField(max_length=13, blank=True, null=True)
-    inventory_prefix = models.CharField(max_length=20, blank=True, null=True)
+    inventory_prefix = models.CharField(max_length=20, blank=True, null=True) # префикс экземпляра
+    batch_number = models.CharField(max_length=20, blank=True, null=True)  # Номер партии
+    inventory_digit = models.CharField(max_length=20, blank=True, null=True)  # Инвентарный номер inventory_digit
     fund_type = models.CharField(max_length=20, choices=FUND_TYPE_CHOICES, default='fiction')
+    acquisition_date = models.DateField("Дата поступления", blank=True, null=True)
+    acquisition_source = models.CharField("Источник поступления", max_length=200, blank=True, null=True)
+    acquisition_price = models.DecimalField("Сумма поступления", max_digits=10, decimal_places=2, blank=True, null=True)
 
     def __str__(self):
         return self.title
@@ -29,10 +34,9 @@ class Book(models.Model):
     @property
     def quantity(self):
         return self.instances.count()
-
 class BookInstance(models.Model):
     book = models.ForeignKey(Book, related_name='instances', on_delete=models.CASCADE)
-    inventory_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    inventory_number = models.CharField(max_length=50, unique=True, blank=True, null=True) #номер экземпляра
 
     def save(self, *args, **kwargs):
         if not self.inventory_number and self.book.inventory_prefix:
@@ -91,4 +95,3 @@ class BookFeedback(models.Model):
         unique_together = ('reader', 'book')  # Один отзыв на книгу от одного читат
     def __str__(self):
         return f"{self.reader.full_name} -> {self.book.title}"
-

@@ -6,9 +6,14 @@ class BookForm(forms.ModelForm):
 
     class Meta:
         model = Book
-        fields = ['title', 'author', 'publisher', 'year', 'location', 'cover_image', 'isbn', 'inventory_prefix', 'fund_type']  # Добавлено fund_type
+        fields = [
+            'title', 'author', 'publisher', 'year', 'location', 'cover_image',
+            'isbn', 'inventory_prefix', 'batch_number', 'inventory_digit', 'fund_type',
+            'acquisition_date', 'acquisition_source', 'acquisition_price'
+        ]
         widgets = {
-            'fund_type': forms.Select()  # Используем <select> для выбора типа фонда
+            'fund_type': forms.Select(),
+            'acquisition_date': forms.DateInput(attrs={'type': 'date'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -19,4 +24,9 @@ class BookForm(forms.ModelForm):
         self.fields['year'].required = False
         self.fields['isbn'].required = False
         self.fields['inventory_prefix'].required = True
-        self.fields['fund_type'].required = True  # Тип фонда обязателен
+        self.fields['batch_number'].required = False
+        self.fields['inventory_digit'].required = False  # Заменили inventory_number на inventory_digit
+        self.fields['fund_type'].required = True
+        self.fields['acquisition_date'].required = False
+        self.fields['acquisition_source'].required = False
+        self.fields['acquisition_price'].required = False

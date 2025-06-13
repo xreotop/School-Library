@@ -1,5 +1,6 @@
 {% load static %}
-<!DOCTYPE html><html lang="ru">
+<!DOCTYPE html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>Библиотека XX</title>
@@ -102,75 +103,81 @@
                     <img src="{% static 'images/default_cover.jpg' %}" alt="Обложка отсутствует">
                 {% endif %}
                 <p><strong>{{ book.title }}</strong></p>
+                <p>Номер партии: {{ book.batch_number|default_if_none:"Не указан" }}</p>
+                <p>Дата поступления: {{ book.acquisition_date|date:"d.m.Y"|default_if_none:"Не указана" }}</p>
+                <p>Источник поступления: {{ book.acquisition_source|default_if_none:"Не указан" }}</p>
+                <p>Общая сумма: {% if book.acquisition_price %}{{ book.acquisition_price }} ₽{% else %}Не указана{% endif %}</p>
+                <p>Инвентарный номер: {{ book.inventory_digit|default_if_none:"Не указан" }}</p>
                 <p>Автор: {{ book.author }}</p>
                 <p>Издательство: {{ book.publisher|default_if_none:"Не указано" }}</p>
-                <p>Год: {{ book.year|default_if_none:"Не указано" }}</p>
+                <p>Год издания: {{ book.year|default_if_none:"Не указано" }}</p>
                 <p>Размещение: {{ book.location|default_if_none:"Не указано" }}</p>
                 <p>Тип фонда: {{ book.get_fund_type_display|default_if_none:"Не указан" }}</p>
-                <p>Количество: {{ book.quantity }}</p>
+                <p>Количество экземпляров: {{ book.quantity }}</p>
                 <p>ISBN: {{ book.isbn|default_if_none:"Не указан" }}</p>
                 {% if book.quantity > 1 %}
-                    <p>Инвентарные номера: <a href="#" class="show-inventories">Показать</a></p>
+                    <p>Номера экземпляров: <a href="#" class="show-inventories">Показать</a></p>
                 {% else %}
-                    <p>Инвентарный номер: {{ book.instances.first.inventory_number|default_if_none:"Не указан" }}</p>
+                    <p>Номер экземпляра: {{ book.instances.first.inventory_number|default_if_none:"Не указан" }}</p>
                 {% endif %}
             </div>
             {% endfor %}
         </div>
     </main>
-<div id="modal" class="modal">
-    <div class="modal-content">
-        <span id="closeModal" class="close">×</span>
-        <h2>Добавить книгу</h2>
-        <form id="add-book-form" enctype="multipart/form-data">
-            {% csrf_token %}
-            <p><input type="text" name="title" placeholder="Название книги" required style="width: 100%; height: 40px; font-size: 16px;"></p>
-            <p>
-                <input type="text" name="author" placeholder="Автор" required id="author-input" style="width: 100%; height: 40px; font-size: 16px;">
-                <div id="author-suggestions" style="margin-top: 5px;"></div>
-            </p>
-            <p><input type="text" name="publisher" placeholder="Издательство (необязательно)" style="width: 100%; height: 40px;"></p>
-            <p><input type="number" name="year" placeholder="Год написания (необязательно)" style="width: 100%; height: 40px;"></p>
-            <p><input type="text" name="location" placeholder="Размещение (необязательное)" style="width: 100%; height: 40px;"></p>
-            <p><input type="file" name="cover_image" style="width: 100%;"> Файл должен быть на латинице</p>
-            <p>Выберите тип фонда
-                <select name="fund_type" required style="width: 100%; height: 40px; font-size: 16px;">
-                    <option value="fiction">Художественный</option>
-                    <option value="educational">Учебный</option>
-                    <option value="reference">Справочный</option>
-                </select>
-            </p>
-            <p><input type="number" name="quantity" placeholder="Количество" min="1" style="width: 100%; height: 40px;"></p>
-            <p><input type="text" name="isbn" placeholder="ISBN (необязательно)" style="width: 100%; height: 40px;"></p>
-            <p><input type="text" name="inventory_prefix" placeholder="Префикс инвентарного номера (например, истдевкл9-)" required style="width: 100%; height: 40px;"></p>
-            <input type="hidden" name="cover_auto">
-            <div id="cover-preview" style="margin: 10px 0;"></div>
-            <div id="form-errors" style="color: red; font-size: 14px;"></div>
-            <button type="submit" class="add-button">Сохранить</button>
-        </form>
-    </div>
-</div>
-
-<div id="modalInventory" class="modal">
-    <div class="modal-content">
-        <span id="closeModalInventory" class="close">×</span>
-        <h2>Инвентарные номера</h2>
-        <div id="inventory-list">
-            <p><strong>Книга:</strong> <span id="inventory-book-title"></span></p>
-            <ul id="inventory-items"></ul>
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span id="closeModal" class="close">×</span>
+            <h2>Добавить книгу</h2>
+            <form id="add-book-form" enctype="multipart/form-data">
+                {% csrf_token %}
+                <p><input type="text" name="batch_number" placeholder="Номер партии (например, № 3, № 5)" style="width: 100%; height: 40px;"></p>
+                <p>Укажите дату поступления<input type="date" name="acquisition_date" placeholder="Дата поступления" style="width: 100%; height: 40px; font-size: 16px;"></p>
+                <p><input type="text" name="acquisition_source" placeholder="Источник поступления" style="width: 100%; height: 40px; font-size: 16px;"></p>
+                <p><input type="number" name="acquisition_price" placeholder="Общая сумма" step="0.01" style="width: 100%; height: 40px; font-size: 16px;"></p>
+                <p><input type="text" name="inventory_digit" placeholder="Инвентарный номер (например, 22, 44, 21)" style="width: 100%; height: 40px;"></p>
+                <p><input type="text" name="title" placeholder="Название книги (Математика 9 класс или Война и мир)" required style="width: 100%; height: 40px; font-size: 16px;"></p>
+                <p>
+                    <input type="text" name="author" placeholder="Автор" required id="author-input" style="width: 100%; height: 40px; font-size: 16px;">
+                    <div id="author-suggestions" style="margin-top: 5px;"></div>
+                </p>
+                <p><input type="text" name="publisher" placeholder="Издательство (необязательно)" style="width: 100%; height: 40px;"></p>
+                <p><input type="number" name="year" placeholder="Год издания (необязательно)" style="width: 100%; height: 40px;"></p>
+                <p><input type="text" name="location" placeholder="Размещение (необязательное)" style="width: 100%; height: 40px;"></p>
+                <p><input type="file" name="cover_image" style="width: 100%;"> Файл должен быть на латинице</p>
+                <p>Выберите тип фонда
+                    <select name="fund_type" required style="width: 100%; height: 40px; font-size: 16px;">
+                        <option value="fiction">Художественный</option>
+                        <option value="educational">Учебный</option>
+                        <option value="reference">Справочный</option>
+                    </select>
+                </p>
+                <p><input type="number" name="quantity" placeholder="Количество экземпляров" min="1" required style="width: 100%; height: 40px;"></p>
+                <p><input type="text" name="isbn" placeholder="ISBN (необязательно)" style="width: 100%; height: 40px;"></p>
+                <p><input type="text" name="inventory_prefix" placeholder="Номер экземпляра (например, войнаимир-)" required style="width: 100%; height: 40px;"></p>
+                <input type="hidden" name="cover_auto">
+                <div id="cover-preview" style="margin: 10px 0;"></div>
+                <div id="form-errors" style="color: red; font-size: 14px;"></div>
+                <button type="submit" class="add-button">Сохранить</button>
+            </form>
         </div>
     </div>
-</div>
-
-<footer class="site-footer">
-    <div class="footer-content">
-        <p>Made by Andrey Kovalev, Vladivostok, Russia</p>
-        <a href="https://t.me/zxcikona20" target="_blank" title="Telegram">
-            <img src="{% static 'images/telegram_icon.png' %}" alt="Telegram" class="telegram-icon">
-        </a>
+    <div id="modalInventory" class="modal">
+        <div class="modal-content">
+            <span id="closeModalInventory" class="close">×</span>
+            <h2>Инвентарные номера</h2>
+            <div id="inventory-list">
+                <p><strong>Книга:</strong> <span id="inventory-book-title"></span></p>
+                <ul id="inventory-items"></ul>
+            </div>
+        </div>
     </div>
-</footer>
-
+    <footer class="site-footer">
+        <div class="footer-content">
+            <p>Made by Andrey Kovalev, Vladivostok, Russia</p>
+            <a href="https://t.me/zxcikona20" target="_blank" title="Telegram">
+                <img src="{% static 'images/telegram_icon.png' %}" alt="Telegram" class="telegram-icon">
+            </a>
+        </div>
+    </footer>
 </body>
 </html>
-

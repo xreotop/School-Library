@@ -3,12 +3,12 @@ from . import views
 from .views import register_chat
 from books.views import telegram_webhook
 
+#path('ajax-book-list/', views.ajax_book_list, name='ajax_book_list'),
 urlpatterns = [
     path('', views.book_list, name='book_list'),
     path('readers/', views.readers_list, name='readers_list'),
     path('add/', views.add_book, name='add_book'),
     path('delete/<int:pk>/', views.delete_book, name='delete_book'),
-
     path('ajax-book-list/', views.ajax_book_list, name='ajax_book_list'),
     path('staff-login/', views.staff_login, name='staff_login'),  #  новый маршрут
     path('verify-pin/', views.verify_pin, name='verify_pin'),
