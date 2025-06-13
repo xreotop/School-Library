@@ -1,6 +1,6 @@
 {% load static %} 
 {% for book in books %}
-<div class="book-card" data-book-id="{{ book.pk }}" 
+<div class="book-card" data-book-id="{{ book.pk }}"
      data-inventory="{% for instance in book.instances.all %}{{ instance.inventory_number }}{% if not forloop.last %},{% endif %}{% endfor %}">
 
     <a href="{% url 'delete_book' book.pk %}" class="delete-icon" title="Удалить">❌</a>
@@ -14,14 +14,15 @@
     <p>Номер партии: {{ book.batch_number|default_if_none:"Не указан" }}</p>
     <p>Дата поступления: {{ book.acquisition_date|date:"d.m.Y"|default_if_none:"Не указана" }}</p>
     <p>Источник поступления: {{ book.acquisition_source|default_if_none:"Не указан" }}</p>
-    <p>Общая сумма: {% if book.acquisition_price %}{{ book.acquisition_price }} ₽{% else %}Не указана{% endif %}</p>
+    <p>Количество экземпляров: {{ book.quantity }}</p>
+    <p>Поступление на сумму: {% if book.acquisition_price %}{{ book.acquisition_price }} ₽{% else %}Не указана{% endif %}</p>
+    <p>Цена за экземпляр: {% if book.price_one %}{{ book.price_one }} ₽{% else %}Не указана{% endif %}</p>
     <p>Инвентарный номер: {{ book.inventory_digit|default_if_none:"Не указан" }}</p>
     <p>Автор: {{ book.author }}</p>
     <p>Издательство: {{ book.publisher|default_if_none:"Не указано" }}</p>
     <p>Год издания: {{ book.year|default_if_none:"Не указано" }}</p>
     <p>Размещение: {{ book.location|default_if_none:"Не указано" }}</p>
     <p>Тип фонда: {{ book.get_fund_type_display|default_if_none:"Не указан" }}</p>
-    <p>Количество экземпляров: {{ book.quantity }}</p>
     <p>ISBN: {{ book.isbn|default_if_none:"Не указан" }}</p>
     {% if book.quantity > 1 %}
         <p>Номера экземпляров: <a href="#" class="show-inventories">Показать</a></p>

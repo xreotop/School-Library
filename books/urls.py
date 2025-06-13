@@ -25,7 +25,11 @@ urlpatterns = [
     path('readers/delete/<int:reader_id>/', views.delete_reader, name='delete_reader'),
     path('readers/add/', views.add_reader, name='add_reader'),
 
-
+    path('suggest-batch/', views.suggest_batch, name='suggest_batch'),
+    path('suggest-title/', views.suggest_title, name='suggest_title'),
+    path('book-details/', views.book_details, name='book_details'),
+    path('book-details-by-batch/', views.book_details_by_batch, name='book_details_by_batch'),
+    path('write-off-books/', views.write_off_books, name='write_off_books'),
     path('issue/', views.book_issue_view, name='book_issue'),
     path('issue/add/', views.add_book_issue, name='add_book_issue'),
 
@@ -41,8 +45,6 @@ urlpatterns = [
     path('statistics/', views.statistics_view, name='statistics'),
     path('statistics/delete/<int:feedback_id>/', views.delete_feedback, name='delete_feedback'),
     path('admin/delete-all-feedback/', views.delete_all_feedback, name='delete_all_feedback'),
-    path('write-off-by-inventory/', views.write_off_book_by_inventory, name='write_off_by_inventory'),
-    path('print-write-off-manual/', views.print_write_off_manual, name='print_write_off_manual'),
     path('get-available-instances/', views.get_available_instances, name='get_available_instances'),
     path('readers/<int:reader_id>/issues/', views.reader_issues, name='reader_issues'),
     path('issues/history/', views.ajax_history, name='ajax_history'),

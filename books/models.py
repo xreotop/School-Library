@@ -2,6 +2,9 @@ from django.db import models
 import os
 
 
+from django.db import models
+import os
+
 class Book(models.Model):
     FUND_TYPE_CHOICES = [
         ('fiction', 'Художественный'),
@@ -15,16 +18,30 @@ class Book(models.Model):
     location = models.CharField(max_length=100, blank=True, null=True)
     cover_image = models.ImageField(upload_to='book_covers/', blank=True, null=True)
     isbn = models.CharField(max_length=13, blank=True, null=True)
-    inventory_prefix = models.CharField(max_length=20, blank=True, null=True) # префикс экземпляра
-    batch_number = models.CharField(max_length=20, blank=True, null=True)  # Номер партии
-    inventory_digit = models.CharField(max_length=20, blank=True, null=True)  # Инвентарный номер inventory_digit
+    inventory_prefix = models.CharField(max_length=20, blank=True, null=True)
+    batch_number = models.CharField(max_length=20, blank=True, null=True)
+    inventory_digit = models.CharField(max_length=20, blank=True, null=True)
     fund_type = models.CharField(max_length=20, choices=FUND_TYPE_CHOICES, default='fiction')
     acquisition_date = models.DateField("Дата поступления", blank=True, null=True)
     acquisition_source = models.CharField("Источник поступления", max_length=200, blank=True, null=True)
     acquisition_price = models.DecimalField("Сумма поступления", max_digits=10, decimal_places=2, blank=True, null=True)
+    price_one = models.DecimalField("Цена за экземпляр", max_digits=10, decimal_places=2, blank=True, null=True)
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs):
+        # Извлекаем quantity из kwargs, если оно передано
+        quantity = kwargs.pop('quantity', None)
+        # Если quantity не передано, используем свойство quantity (но только для сохранённых объектов)
+        if quantity is None and self.pk:
+            quantity = self.quantity
+        # Рассчитываем price_one
+        if self.acquisition_price and quantity and quantity > 0:
+            self.price_one = self.acquisition_price / quantity
+        else:
+            self.price_one = None
+        super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         if self.cover_image and os.path.isfile(self.cover_image.path):
@@ -35,12 +52,15 @@ class Book(models.Model):
     def quantity(self):
         return self.instances.count()
 class BookInstance(models.Model):
-    book = models.ForeignKey(Book, related_name='instances', on_delete=models.CASCADE)
-    inventory_number = models.CharField(max_length=50, unique=True, blank=True, null=True) #номер экземпляра
+    book = models.ForeignKey('Book', related_name='instances', on_delete=models.CASCADE)
+    inventory_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
 
     def save(self, *args, **kwargs):
-        if not self.inventory_number and self.book.inventory_prefix:
-            max_number = BookInstance.objects.filter(book__inventory_prefix=self.book.inventory_prefix).count()
+        if not self.inventory_number and self.book and self.book.inventory_prefix:
+            # Считаем количество существующих экземпляров с таким же префиксом
+            max_number = BookInstance.objects.filter(
+                book__inventory_prefix=self.book.inventory_prefix
+            ).count()
             self.inventory_number = f"{self.book.inventory_prefix}{max_number + 1}"
         super().save(*args, **kwargs)
 

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru">
+<title>Список на исключение из библиотечного фонда</title>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12pt;
+            margin: 20px;
+            min-height: 100vh; /* Устанавливаем минимальную высоту страницы */
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        .header-left {
+            width: 50%;
+            text-align: left;
+        }
+        .header-right {
+            width: 50%;
+            text-align: right;
+        }
+        .title {
+            text-align: center;
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            page-break-inside: auto; /* Разрешаем разрывы внутри таблицы */
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 4px; /* Уменьшен отступ для компактности */
+            text-align: left;
+            font-size: 10pt; /* Уменьшен размер шрифта */
+            line-height: 1.2; /* Уменьшен интерлиньяж */
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .content {
+            flex-grow: 1; /* Растягиваем контент */
+        }
+        .signatures-container {
+            padding-top: 20px; /* Отступ от контента */
+            width: 100%;
+            margin-top: auto; /* Динамически прижимает подписи к низу */
+        }
+        .signatures-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11pt;
+            page-break-inside: avoid; /* Предотвращаем разрыв таблицы внутри */
+        }
+        .signatures-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            vertical-align: top;
+            text-align: center;
+        }
+        .line {
+            border-bottom: 1px solid black;
+            height: 15px; /* Уменьшено для компактности */
+            margin-bottom: 3px;
+            display: block;
+        }
+        .label {
+            font-size: 10pt;
+            color: #000;
+        }
+        /* Управление разрывами страниц при печати */
+        @media print {
+            .signatures-container {
+                position: relative; /* Убираем фиксированное позиционирование */
+                bottom: auto; /* Убираем фиксированное прижатие к низу */
+                page-break-before: auto; /* Разрешаем подписи следовать за содержимым */
+            }
+            table {
+                page-break-after: auto; /* Разрешаем разрыв после таблицы */
+            }
+            tr {
+                page-break-inside: avoid; /* Предотвращаем разрыв внутри строки */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <div class="header">
+            <div class="header-left">
+                Приложение к акту № ____ от "_" _________ 20__ г.
+            </div>
+            <div class="header-right">
+                Форма 0504144
+            </div>
+        </div>
+        <div class="title">
+            СПИСОК на исключение объектов библиотечного фонда по причине: {{ books.0.reason|default:"Не указана" }}
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>№ партии</th>
+                    <th>Инвентарный номер</th>
+                    <th>Название</th>
+                    <th>Автор</th>
+                    <th>Издательство</th>
+                    <th>Год издания</th>
+                    <th>Класс</th>
+                    <th>Количество</th>
+                    <th>Цена за экземпляр (руб.)</th>
+                    <th>Общая сумма (руб.)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for book in books %}
+                <tr>
+                    <td>{{ book.batch_number|default:"Не указано" }}</td>
+                    <td>{{ book.inventory_digit|default:"Не указано" }}</td>
+                    <td>{{ book.title }}</td>
+                    <td>{{ book.author }}</td>
+                    <td>{{ book.publisher|default:"Не указано" }}</td>
+                    <td>{{ book.year|default:"Не указано" }}</td>
+                    <td>{{ book.school_class|default:"Не указано" }}</td>
+                    <td>{{ book.quantity }}</td>
+                    <td>{{ book.unit_price|floatformat:2 }}</td>
+                    <td>{{ book.total_price|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                {% for _ in "x"|ljust:36 %}
+                <tr>
+                    <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                </tr>
+                {% endfor %}
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="7"></td> <!-- Пустые ячейки для выравнивания -->
+                    <td>Всего экземпляров: {{ total_quantity }}</td>
+                    <td></td> <!-- Пустая ячейка для "Цена за экземпляр" -->
+                    <td>Всего: {{ total_amount|floatformat:2 }} руб.</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    <div class="signatures-container">
+        <table class="signatures-table">
+            <tr>
+                <td>Председатель комиссии:</td>
+                <td><div class="line"></div><div class="label">(должность)</div></td>
+                <td><div class="line"></div><div class="label">(подпись)</div></td>
+                <td><div class="line"></div><div class="label">(расшифровка подписи)</div></td>
+            </tr>
+            <tr>
+                <td>Члены комиссии:</td>
+                <td><div class="line"></div><div class="label">(должность)</div></td>
+                <td><div class="line"></div><div class="label">(подпись)</div></td>
+                <td><div class="line"></div><div class="label">(расшифровка подписи)</div></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><div class="line"></div><div class="label">(должность)</div></td>
+                <td><div class="line"></div><div class="label">(подпись)</div></td>
+                <td><div class="line"></div><div class="label">(расшифровка подписи)</div></td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

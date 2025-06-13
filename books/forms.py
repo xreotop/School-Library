@@ -9,11 +9,12 @@ class BookForm(forms.ModelForm):
         fields = [
             'title', 'author', 'publisher', 'year', 'location', 'cover_image',
             'isbn', 'inventory_prefix', 'batch_number', 'inventory_digit', 'fund_type',
-            'acquisition_date', 'acquisition_source', 'acquisition_price'
+            'acquisition_date', 'acquisition_source', 'acquisition_price', 'price_one'
         ]
         widgets = {
             'fund_type': forms.Select(),
             'acquisition_date': forms.DateInput(attrs={'type': 'date'}),
+            'price_one': forms.NumberInput(attrs={'readonly': 'readonly'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -25,8 +26,9 @@ class BookForm(forms.ModelForm):
         self.fields['isbn'].required = False
         self.fields['inventory_prefix'].required = True
         self.fields['batch_number'].required = False
-        self.fields['inventory_digit'].required = False  # Заменили inventory_number на inventory_digit
+        self.fields['inventory_digit'].required = False
         self.fields['fund_type'].required = True
         self.fields['acquisition_date'].required = False
         self.fields['acquisition_source'].required = False
         self.fields['acquisition_price'].required = False
+        self.fields['price_one'].required = False

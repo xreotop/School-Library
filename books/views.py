@@ -74,13 +74,15 @@ from .forms import BookForm
 import os
 
 
+
 def add_book(request):
     if request.method == 'POST':
         form = BookForm(request.POST, request.FILES)
         if form.is_valid():
             book = form.save(commit=False)
             cover_url = request.POST.get('cover_auto')
-            quantity = int(request.POST.get('quantity', 1))
+            quantity = form.cleaned_data.get('quantity', 1)  # Получаем quantity из формы
+
             # Обработка обложки
             if cover_url and not request.FILES.get('cover_image'):
                 try:
@@ -92,19 +94,22 @@ def add_book(request):
                         filename = f"auto_cover_{safe_title}{ext}"
                         book.cover_image.save(filename, ContentFile(response.content), save=False)
                 except Exception as e:
-                    return JsonResponse({'success': False, 'errors': {'cover_image': ['Ошибка при загрузке обложки.']}}, status=400)
+                    return JsonResponse({'success': False, 'errors': {'cover_image': [f'Ошибка при загрузке обложки: {str(e)}']}}, status=400)
             elif request.FILES.get('cover_image'):
                 book.cover_image = request.FILES['cover_image']
+
             try:
-                book.save()
-                # Генерация экземпляров с уникальными инвентарными номерами
-                max_number = BookInstance.objects.filter(book__inventory_prefix=book.inventory_prefix).count()
+                # Сохраняем Book, передавая quantity
+                book.save(quantity=quantity)
+
+                # Создаём экземпляры BookInstance
                 for i in range(quantity):
                     instance = BookInstance(book=book)
-                    instance.save()  # Генерация inventory_number произойдёт в save() метода BookInstance
+                    instance.save()  # inventory_number генерируется в методе save модели BookInstance
+
+                return JsonResponse({'success': True})
             except Exception as e:
                 return JsonResponse({'success': False, 'errors': {'general': [f'Ошибка при сохранении книги: {str(e)}']}}, status=400)
-            return JsonResponse({'success': True})
         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
     return redirect('book_list')
 
@@ -115,53 +120,164 @@ def delete_book(request, pk):
     return redirect('book_list')
 
 
-def write_off_book_by_inventory(request):
-    if request.method == 'POST':
-        inventory_number = request.POST.get('inventory_number')
-        reason = request.POST.get('reason', '')
-        try:
-            book_instance = BookInstance.objects.get(inventory_number=inventory_number)
-            book = book_instance.book
-            book_instance.delete()
-            if book.instances.count() == 0:
-                book.delete()
-            context = {
-                'book': book,
-                'book_instance': book_instance,
-                'write_off_date': timezone.now().date(),
-                'reason': reason,
-            }
-            html = render_to_string('books/write_off_print.html', context)
-            return JsonResponse({
-                'success': True,
-                'message': 'Книга успешно списана.',
-                'print_html': html
-            })
-        except BookInstance.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'message': 'Инвентарный номер не найден.'
-            })
-    return render(request, 'books/book_list.html')
-def print_write_off_manual(request):
-    if request.method == 'POST':
-        inventory_number = request.POST.get('inventory_number')
-        reason = request.POST.get('reason', '')
-        try:
-            book_instance = BookInstance.objects.get(inventory_number=inventory_number)
-            context = {
-                'book': book_instance.book,
-                'book_instance': book_instance,
-                'write_off_date': timezone.now().date(),
-                'reason': reason,
-            }
-            html = render_to_string('books/write_off_print.html', context)
-            response = HttpResponse(html)
-            return response
-        except BookInstance.DoesNotExist:
-            return redirect('book_list')
-    return redirect('book_list')
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import render, redirect
+from django.views.decorators.csrf import csrf_exempt
+from django.template.loader import render_to_string
+from .models import Book, BookInstance
+from decimal import Decimal
+import json
 
+
+def suggest_batch(request):
+    query = request.GET.get('query', '').strip()
+    batches = Book.objects.filter(batch_number__icontains=query).values('batch_number').distinct()[:10]
+    suggestions = [b['batch_number'] for b in batches if b['batch_number']]
+    return JsonResponse({'suggestions': suggestions})
+
+
+def suggest_title(request):
+    query = request.GET.get('title', '').strip()
+    if len(query) < 3:
+        return JsonResponse({'suggestions': []})
+    books = Book.objects.filter(title__icontains=query).values('id', 'title')[:10]
+    suggestions = [{'id': b['id'], 'title': b['title']} for b in books]
+    return JsonResponse({'suggestions': suggestions})
+
+
+def book_details(request):
+    book_id = request.GET.get('id')
+    try:
+        book = Book.objects.get(id=book_id)
+        data = {
+            'batch_number': book.batch_number,
+            'inventory_digit': book.inventory_digit,
+            'quantity': book.quantity,
+            'year': book.year,
+            'publisher': book.publisher,
+            'unit_price': str(book.price_one) if book.price_one else '',
+            'author': book.author
+        }
+        return JsonResponse(data)
+    except Book.DoesNotExist:
+        return JsonResponse({'error': 'Книга не найдена'}, status=404)
+
+
+def book_details_by_batch(request):
+    batch_number = request.GET.get('batch_number', '').strip()
+    if not batch_number:
+        return JsonResponse({'error': 'Номер партии не указан'}, status=400)
+
+    try:
+        book = Book.objects.filter(batch_number=batch_number).first()
+        if not book:
+            return JsonResponse({'error': f'Книга с номером партии "{batch_number}" не найдена'}, status=404)
+
+        data = {
+            'title': book.title or '',
+            'author': book.author or '',
+            'year': book.year or '',
+            'publisher': book.publisher or '',
+            'inventory_digit': book.inventory_digit or '',
+            'quantity': book.quantity or 1,
+            'unit_price': str(book.price_one) if book.price_one else '',  # Заменили unit_price на acquisition_price
+        }
+        return JsonResponse(data)
+    except Exception as e:
+        return JsonResponse({'error': f'Ошибка сервера: {str(e)}'}, status=500)
+from django.http import JsonResponse
+from django.template.loader import render_to_string
+from django.views.decorators.csrf import csrf_exempt
+from .models import Book, BookInstance
+from decimal import Decimal, DecimalException
+
+@csrf_exempt
+def write_off_books(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Метод не поддерживается'}, status=405)
+
+    try:
+        books_data = []
+        batch_numbers = request.POST.getlist('batch_number[]')
+        if not batch_numbers:
+            return JsonResponse({'success': False, 'message': 'Не указаны номера партий'}, status=400)
+
+        # Получаем единую причину списания
+        reason = request.POST.get('reason', '').strip()
+        if not reason:
+            return JsonResponse({'success': False, 'message': 'Не указана причина списания'}, status=400)
+
+        for i in range(len(batch_numbers)):
+            try:
+                unit_price = request.POST.getlist('unit_price[]')[i]
+                if not unit_price:
+                    raise ValueError('Цена за экземпляр не указана')
+                quantity = int(request.POST.getlist('quantity[]')[i])
+                book_data = {
+                    'batch_number': batch_numbers[i],
+                    'inventory_digit': request.POST.getlist('inventory_digit[]')[i],
+                    'quantity': quantity,
+                    'title': request.POST.getlist('title[]')[i],
+                    'author': request.POST.getlist('author[]')[i],
+                    'year': request.POST.getlist('year[]')[i],
+                    'school_class': request.POST.getlist('school_class[]')[i] or None,
+                    'publisher': request.POST.getlist('publisher[]')[i],
+                    'unit_price': Decimal(unit_price),
+                    'total_price': Decimal(unit_price) * quantity,
+                    'reason': reason
+                }
+                books_data.append(book_data)
+            except (IndexError, ValueError, DecimalException) as e:
+                return JsonResponse({'success': False, 'message': f'Ошибка в данных книги #{i + 1}: {str(e)}'}, status=400)
+
+        # Подсчёт итогов
+        total_quantity = sum(book['quantity'] for book in books_data)
+        total_amount = sum(book['total_price'] for book in books_data)
+
+        # Проверка и списание книг
+        for book_data in books_data:
+            try:
+                book = Book.objects.get(
+                    batch_number=book_data['batch_number'],
+                    inventory_digit=book_data['inventory_digit'],
+                    title=book_data['title'],
+                    author=book_data['author']
+                )
+                if book.quantity < book_data['quantity']:
+                    return JsonResponse({'success': False, 'message': f'Недостаточно экземпляров для книги "{book.title}"'}, status=400)
+
+                # Проверяем соответствие цены
+                if book.price_one and book_data['unit_price'] != book.price_one:
+                    return JsonResponse({'success': False, 'message': f'Цена для книги "{book.title}" не соответствует базе'}, status=400)
+
+                # Удаляем указанное количество экземпляров
+                instances = book.instances.all()[:book_data['quantity']]
+                for instance in instances:
+                    instance.delete()
+
+                # Если все экземпляры удалены, удаляем книгу
+                if book.quantity == 0:
+                    book.delete()
+            except Book.DoesNotExist:
+                return JsonResponse({'success': False, 'message': f'Книга с указанными данными не найдена'}, status=400)
+
+        # Генерация HTML для печати
+        try:
+            print_html = render_to_string('books/write_off_act.html', {
+                'books': books_data,
+                'total_quantity': total_quantity,
+                'total_amount': total_amount
+            })
+        except Exception as template_error:
+            return JsonResponse({'success': False, 'message': f'Ошибка при загрузке шаблона write_off_act.html: {str(template_error)}'}, status=400)
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Книги успешно списаны',
+            'print_html': print_html
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Ошибка: {str(e)}'}, status=400)
 #Поиск
 def ajax_book_list(request):
     search_type = request.GET.get('type', 'title')
