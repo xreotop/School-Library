@@ -220,7 +220,6 @@ def write_off_books(request):
                     'title': request.POST.getlist('title[]')[i],
                     'author': request.POST.getlist('author[]')[i],
                     'year': request.POST.getlist('year[]')[i],
-                    'school_class': request.POST.getlist('school_class[]')[i] or None,
                     'publisher': request.POST.getlist('publisher[]')[i],
                     'unit_price': Decimal(unit_price),
                     'total_price': Decimal(unit_price) * quantity,

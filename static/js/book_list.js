@@ -116,41 +116,42 @@ $(function () {
     });
 
     // Добавление новой книги в форму списания
-    $('#addAnotherBook').on('click', function () {
-        const bookCount = $('#books-to-write-off .book-entry').length + 1;
-        const newEntry = `
-            <h3>Книга ${bookCount}</h3>
-            <div class="book-entry">
-                <p>
-                    <select name="batch_number[]" class="batch-input" required style="width: 100%; height: 40px; font-size: 16px;">
-                        <option value="">Выберите № партии</option>
-                    </select>
-                    <div class="batch-suggestions" style="margin-top: 5px;"></div>
-                </p>
-                <p><input type="text" name="inventory_digit[]" placeholder="Инвентарный номер (например, 22, 44)" required style="width: 100%; height: 40px;"></p>
-                <p><input type="number" name="quantity[]" placeholder="Количество экземпляров" min="1" required style="width: 100%; height: 40px;"></p>
-                <p><input type="text" name="title[]" class="title-input" placeholder="Название учебника (например, Математика 9 класс)" required style="width: 100%; height: 40px; font-size: 16px;"></p>
-                <p><input type="text" name="author[]" placeholder="Автор" required style="width: 100%; height: 40px;"></p>
-                <p><input type="number" name="year[]" placeholder="Год выпуска" required style="width: 100%; height: 40px;"></p>
-                <p><input type="text" name="school_class[]" placeholder="Класс (например, 9А, 11, необязательно)" style="width: 100%; height: 40px;"></p>
-                <p><input type="text" name="publisher[]" placeholder="Издательство" required style="width: 100%; height: 40px;"></p>
-                <p><input type="number" name="unit_price[]" placeholder="Цена за экземпляр (руб.)" step="0.01" required style="width: 100%; height: 40px;"></p>
-                <p><textarea name="reason[]" placeholder="Причина списания (например, износ, утрата)" required style="width: 100%; height: 80px; font-size: 16px;"></textarea></p>
-                <button type="button" class="remove-book-entry add-button" style="margin-top: 10px;">Удалить книгу</button>
-            </div>
-        `;
-        $('#books-to-write-off').append(newEntry);
-        loadBatchNumbers($('.book-entry:last .batch-input'));
-    });
-
-    // Удаление книги из формы
-    $(document).on('click', '.remove-book-entry', function () {
-        $(this).closest('.book-entry').prev('h3').remove();
-        $(this).closest('.book-entry').remove();
-        $('#books-to-write-off h3').each(function (index) {
-            $(this).text(`Книга ${index + 1}`);
+        $('#addAnotherBook').on('click', function () {
+            console.log('Добавление новой книги'); // Отладка
+            const bookCount = $('#books-to-write-off .book-entry').length + 1;
+            const newEntry = `
+                <h3>Книга ${bookCount}</h3>
+                <div class="book-entry">
+                    <p>
+                        <select name="batch_number[]" class="batch-input" required style="width: 100%; height: 40px; font-size: 16px;">
+                            <option value="">Выберите № партии</option>
+                        </select>
+                        <div class="batch-suggestions" style="margin-top: 5px;"></div>
+                    </p>
+                    <p><input type="text" name="inventory_digit[]" placeholder="Инвентарный номер (например, 22, 44)" required style="width: 100%; height: 40px;"></p>
+                    <p><input type="number" name="quantity[]" placeholder="Количество экземпляров" min="1" required style="width: 100%; height: 40px;"></p>
+                    <p><input type="text" name="title[]" class="title-input" placeholder="Название учебника (например, Математика 9 класс)" required style="width: 100%; height: 40px; font-size: 16px;"></p>
+                    <p><input type="text" name="author[]" placeholder="Автор" required style="width: 100%; height: 40px;"></p>
+                    <p><input type="number" name="year[]" placeholder="Год выпуска" required style="width: 100%; height: 40px;"></p>
+                    <p><input type="text" name="publisher[]" placeholder="Издательство" required style="width: 100%; height: 40px;"></p>
+                    <p><input type="number" name="unit_price[]" placeholder="Цена за экземпляр (руб.)" step="0.01" required style="width: 100%; height: 40px;"></p>
+                    <button type="button" class="remove-book-entry add-button" style="margin-top: 10px;">Удалить книгу</button>
+                </div>
+            `;
+            $('#books-to-write-off').append(newEntry);
+            loadBatchNumbers($('.book-entry:last .batch-input'));
         });
-    });
+
+        // Удаление книги из формы
+        $(document).on('click', '.remove-book-entry', function () {
+            $(this).closest('.book-entry').prev('h3').remove();
+            $(this).closest('.book-entry').remove();
+            $('#books-to-write-off h3').each(function (index) {
+                $(this).text(`Книга ${index + 1}`);
+            });
+        });
+
+
 
     // Валидация формы перед отправкой
     function validateForm() {
@@ -235,8 +236,8 @@ $(function () {
     $('#closeModalWriteOff').on('click', () => $('#modalWriteOff').hide());
 
     window.onclick = (e) => {
-        if (e.target === document.getElementById('modal')) $('#modal').hide();
-        if (e.target === document.getElementById('modalInventory')) $('#modalInventory').hide();
+        if (e.target === document.getElementById('modal')) $('#modal').hide();        if (e.target === document.getElementById('modalInventory')) $('#modalInventory').hide();
+
         if (e.target === document.getElementById('modalWriteOff')) $('#modalWriteOff').hide();
     };
 
@@ -325,122 +326,15 @@ $(function () {
         });
     });
 
-    // Открытие модального окна списания
+
     // Открытие модального окна списания
     $('#openWriteOffModal').on('click', () => {
         $('#modalWriteOff').css('display', 'flex');
         loadBatchNumbers($('.batch-input')); // Загружаем номера партий
     });
 
-    // Добавление новой книги в форму списания
-    $('#addAnotherBook').off('click').on('click', function () {
-        console.log('Добавление новой книги'); // Отладка
-        const bookCount = $('#books-to-write-off .book-entry').length + 1;
-        const newEntry = `
-            <h3>Книга ${bookCount}</h3>
-            <div class="book-entry">
-                <p>
-                    <select name="batch_number[]" class="batch-input" required style="width: 100%; height: 40px; font-size: 16px;">
-                        <option value="">Выберите № партии</option>
-                    </select>
-                    <div class="batch-suggestions" style="margin-top: 5px;"></div>
-                </p>
-                <p><input type="text" name="inventory_digit[]" placeholder="Инвентарный номер (например, 22, 44)" required style="width: 100%; height: 40px;"></p>
-                <p><input type="number" name="quantity[]" placeholder="Количество экземпляров" min="1" required style="width: 100%; height: 40px;"></p>
-                <p><input type="text" name="title[]" class="title-input" placeholder="Название учебника (например, Математика 9 класс)" required style="width: 100%; height: 40px; font-size: 16px;"></p>
-                <p><input type="text" name="author[]" placeholder="Автор" required style="width: 100%; height: 40px;"></p>
-                <p><input type="number" name="year[]" placeholder="Год выпуска" required style="width: 100%; height: 40px;"></p>
-                <p><input type="text" name="school_class[]" placeholder="Класс (например, 9А, 11, необязательно)" style="width: 100%; height: 40px;"></p>
-                <p><input type="text" name="publisher[]" placeholder="Издательство" required style="width: 100%; height: 40px;"></p>
-                <p><input type="number" name="unit_price[]" placeholder="Цена за экземпляр (руб.)" step="0.01" required style="width: 100%; height: 40px;"></p>
-                <button type="button" class="remove-book-entry add-button" style="margin-top: 10px;">Удалить книгу</button>
-            </div>
-        `;
-        $('#books-to-write-off').append(newEntry);
-        loadBatchNumbers($('.book-entry:last .batch-input'));
-    });
-        // Удаление книги из формы
-    $(document).on('click', '.remove-book-entry', function () {
-        $(this).closest('.book-entry').prev('h3').remove();
-        $(this).closest('.book-entry').remove();
-        $('#books-to-write-off h3').each(function (index) {
-            $(this).text(`Книга ${index + 1}`);
-        });
-    });
 
 
-    // Обработка формы списания
-    $('#writeOffForm').off('submit').on('submit', function (e) {
-        e.preventDefault();
-        const $button = $('#confirmWriteOff');
-        const $errors = $('#write-off-errors');
-        const formData = new FormData(this);
-
-        if (!validateForm()) {
-            $button.prop('disabled', false).text('Списать');
-            return;
-        }
-
-        console.log('Отправляемые данные формы:');
-        for (let [key, value] of formData.entries()) {
-            console.log(`${key}: ${value}`);
-        }
-
-        $button.prop('disabled', true).text('Обработка...');
-        $errors.empty();
-
-        $.ajax({
-            url: '/books/write-off-books/',
-            type: 'POST',
-            data: formData,
-            contentType: false,
-            processData: false,
-            success: function (data) {
-                console.log('Ответ сервера:', data);
-                if (data.success) {
-                    alert(data.message);
-                    updateBooks();
-                    $('#writeOffForm')[0].reset();
-                    console.log('Сброс формы: установка одной книги'); // Отладка
-                    $('#books-to-write-off').html(`
-                        <h3>Книга 1</h3>
-                        <div class="book-entry">
-                            <p>
-                                <select name="batch_number[]" class="batch-input" required style="width: 100%; height: 40px; font-size: 16px;">
-                                    <option value="">Выберите № партии</option>
-                                </select>
-                                <div class="batch-suggestions" style="margin-top: 5px;"></div>
-                            </p>
-                            <p><input type="text" name="inventory_digit[]" placeholder="Инвентарный номер (например, 22, 44)" required style="width: 100%; height: 40px;"></p>
-                            <p><input type="number" name="quantity[]" placeholder="Количество экземпляров" min="1" required style="width: 100%; height: 40px;"></p>
-                            <p><input type="text" name="title[]" class="title-input" placeholder="Название учебника (например, Математика 9 класс)" required style="width: 100%; height: 40px; font-size: 16px;"></p>
-                            <p><input type="text" name="author[]" placeholder="Автор" required style="width: 100%; height: 40px;"></p>
-                            <p><input type="number" name="year[]" placeholder="Год выпуска" required style="width: 100%; height: 40px;"></p>
-                            <p><input type="text" name="school_class[]" placeholder="Класс (например, 9А, 11, необязательно)" style="width: 100%; height: 40px;"></p>
-                            <p><input type="text" name="publisher[]" placeholder="Издательство" required style="width: 100%; height: 40px;"></p>
-                            <p><input type="number" name="unit_price[]" placeholder="Цена за экземпляр (руб.)" step="0.01" required style="width: 100%; height: 40px;"></p>
-                        </div>
-                    `);
-                    loadBatchNumbers($('.batch-input')); // Перезагружаем номера партий
-                    $('#modalWriteOff').hide();
-                } else {
-                    console.error('Ошибка от сервера:', data.message);
-                    $errors.text('Ошибка: ' + (data.message || 'Ошибка при списании книг.'));
-                }
-            },
-            error: function (xhr) {
-                console.error('Ошибка при списании:', {
-                    status: xhr.status,
-                    responseText: xhr.responseText,
-                    responseJSON: xhr.responseJSON
-                });
-                $errors.text('Ошибка: ' + (xhr.responseJSON?.message || 'Произошла ошибка при списании. Проверьте данные.'));
-            },
-            complete: function () {
-                $button.prop('disabled', false).text('Списать');
-            }
-        });
-    });
 
     // Списание и печать акта
     $('#confirmAndPrintWriteOff').off('click').on('click', function () {
@@ -502,10 +396,9 @@ $(function () {
                             </p>
                             <p><input type="text" name="inventory_digit[]" placeholder="Инвентарный номер (например, 22, 44)" required style="width: 100%; height: 40px;"></p>
                             <p><input type="number" name="quantity[]" placeholder="Количество экземпляров" min="1" required style="width: 100%; height: 40px;"></p>
-                            <p><input type="text" name="title[]" class="title-input" placeholder="Название учебника (например, Математика 9 класс)" required style="width: 100%; height: 40px; font-size: 16px;"></p>
                             <p><input type="text" name="author[]" placeholder="Автор" required style="width: 100%; height: 40px;"></p>
                             <p><input type="number" name="year[]" placeholder="Год выпуска" required style="width: 100%; height: 40px;"></p>
-                            <p><input type="text" name="school_class[]" placeholder="Класс (например, 9А, 11, необязательно)" style="width: 100%; height: 40px;"></p>
+                           
                             <p><input type="text" name="publisher[]" placeholder="Издательство" required style="width: 100%; height: 40px;"></p>
                             <p><input type="number" name="unit_price[]" placeholder="Цена за экземпляр (руб.)" step="0.01" required style="width: 100%; height: 40px;"></p>
                         </div>
